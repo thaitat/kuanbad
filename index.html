@@ -1,0 +1,926 @@
+<!doctype html>
+<!--
+=====================================================================
+  ก๊วนแบด — แอปจัดการก๊วนแบดมินตัน (ไฟล์เดียวจบ)
+=====================================================================
+  แผนที่ไฟล์ (ค้นหาคำในวงเล็บด้วย Ctrl+F เพื่อกระโดดไปส่วนนั้น)
+
+  [ส่วน A] สีและหน้าตา ............ อยู่ใน <style> ค้นหา "ส่วน A"
+  [ส่วน B] โครงหน้าจอ ............. อยู่ใน <body>  ค้นหา "ส่วน B"
+  [ส่วน C] ตั้งค่าที่ปรับได้ ........ อยู่ต้น <script> ค้นหา "ส่วน C"  <-- แก้บ่อยที่สุด
+  [ส่วน D] ตัวช่วยเล็กๆ ............ ค้นหา "ส่วน D"
+  [ส่วน E] บันทึกข้อมูล ............ ค้นหา "ส่วน E"
+  [ส่วน F] สมองของแอป (Elo, จัดคู่, คิดเงิน) ค้นหา "ส่วน F"
+  [ส่วน G] สร้างหน้าจอแต่ละแท็บ .... ค้นหา "ส่วน G"
+  [ส่วน H] หน้าต่าง popup ........... ค้นหา "ส่วน H"
+  [ส่วน I] ปุ่มกดแต่ละปุ่มทำอะไร .... ค้นหา "ส่วน I"
+
+  วิธีทดสอบ: ดับเบิลคลิกไฟล์นี้บนคอม จะเปิดใน Chrome ใช้งานได้ทันที
+  แก้เสร็จแล้วอัปโหลดทับไฟล์ index.html ใน Assets ของ Kodular
+=====================================================================
+-->
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ก๊วนแบด</title>
+<meta name="theme-color" content="#1C7A59">
+<meta name="description" content="จัดคู่ จัดอันดับ และคิดค่าลูกแบดของก๊วน">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="theme-color" content="#1C7A59">
+<meta name="description" content="จัดคู่ จัดอันดับ และคิดค่าลูกแบดของก๊วน">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Bai+Jamjuree:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   [ส่วน A] สีและหน้าตา
+   ---------------------------------------------------------------------
+   เปลี่ยนสีทั้งแอปได้ที่นี่ที่เดียว (ใช้รหัสสีแบบ #RRGGBB)
+   --bg        สีพื้นหลังแอป
+   --surface   สีพื้นการ์ดและกล่อง
+   --ink       สีตัวอักษรหลัก
+   --muted     สีตัวอักษรรอง (คำอธิบายเล็กๆ)
+   --line      สีเส้นขอบ
+   --court     สีสนาม และสีปุ่มหลัก
+   --court-2   สีปุ่มหลักตอนกด
+   --cork      สีส่วนนับลูกแบด และป้ายระดับสูงสุด
+   --cork-soft สีพื้นแถบนับลูก
+   --loss      สีแดง (แพ้ / ลบ / คะแนนลด)
+   ชุดแรกคือโหมดสว่าง ชุดถัดไปคือโหมดมืด (มือถือตั้งเป็นธีมมืด)
+   ===================================================================== */
+:root{
+  --bg:#EEF3EF;--surface:#FFFFFF;--ink:#13241C;--muted:#5A6B62;--line:#D5DED8;
+  --court:#1C7A59;--court-2:#15654A;--on-court:#FFFFFF;
+  --cork:#B97A12;--cork-soft:#F7EACD;--loss:#B3433A;--focus:#2F6FED;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1713;--surface:#16221C;--ink:#E4EDE8;--muted:#92A49A;--line:#2A3B33;
+    --court:#1D6B50;--court-2:#175841;--cork:#E0AA48;--cork-soft:#3A2F17;--loss:#E06A5F;--focus:#7AA2FF;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1713;--surface:#16221C;--ink:#E4EDE8;--muted:#92A49A;--line:#2A3B33;
+  --court:#1D6B50;--court-2:#175841;--cork:#E0AA48;--cork-soft:#3A2F17;--loss:#E06A5F;--focus:#7AA2FF;
+  color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:400 16px/1.55 "Anuphan",system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;
+  -webkit-tap-highlight-color:transparent}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.wrap{max-width:720px;margin:0 auto;padding:0 16px 120px}
+h1,h2,h3,.num{font-family:"Bai Jamjuree","Anuphan",system-ui,sans-serif}
+h1{font-weight:700;font-size:1.55rem;line-height:1.1;margin:0}
+h2{font-weight:600;font-size:1.15rem;margin:0}
+h3{font-weight:600;font-size:1rem;margin:0}
+.sub{color:var(--muted);font-size:.9rem}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0 12px}
+.iconbtn{border:1px solid var(--line);background:var(--surface);border-radius:50%;width:42px;height:42px;
+  display:grid;place-items:center;cursor:pointer;flex:none}
+.btn{border:0;border-radius:10px;padding:10px 16px;cursor:pointer;
+  font-family:"Bai Jamjuree","Anuphan",sans-serif;font-weight:600;font-size:.98rem;line-height:1.2}
+.btn.primary{background:var(--court);color:var(--on-court)}
+.btn.primary:active{background:var(--court-2)}
+.btn.ghost{background:var(--surface);border:1px solid var(--line)}
+.btn.danger{background:transparent;color:var(--loss);border:1px solid var(--loss)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:6px 0 14px}
+section{margin-top:28px}
+section>h2{margin-bottom:10px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px}
+.field{display:grid;gap:4px;margin-bottom:12px}
+.field span{font-size:.9rem;color:var(--muted)}
+.field input,.field select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+
+/* ---------- รูปสนาม: เส้นคอร์ท เน็ต และตำแหน่งชื่อผู้เล่น ---------- */
+.cc{margin-bottom:22px}
+.cc-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}
+.court{position:relative;aspect-ratio:2.15/1;min-height:150px;background:var(--court);border-radius:6px;
+  display:grid;grid-template-columns:1fr 1fr;color:var(--on-court);overflow:hidden}
+.court::before{content:"";position:absolute;inset:9px;border:2px solid rgba(255,255,255,.85);pointer-events:none}
+.court::after{content:"";position:absolute;top:0;bottom:0;left:50%;width:3px;transform:translateX(-50%);
+  background:repeating-linear-gradient(to bottom,#fff 0 5px,rgba(255,255,255,0) 5px 9px)}
+.half{position:relative;display:grid;grid-template-rows:1fr 1fr;padding:9px 0}
+.half .pl{display:flex;flex-direction:column;justify-content:center;padding:6px 20px}
+.half::before{content:"";position:absolute;top:9px;bottom:9px;width:2px;background:rgba(255,255,255,.55)}
+.half::after{content:"";position:absolute;top:50%;height:2px;background:rgba(255,255,255,.55)}
+.half.a::before{right:24%}.half.a::after{left:9px;right:24%}
+.half.b::before{left:24%}.half.b::after{right:9px;left:24%}
+.half.b .pl{align-items:flex-end;text-align:right}
+.pl{position:relative;z-index:1;line-height:1.15;text-shadow:0 1px 2px rgba(0,0,0,.35)}
+.pl b{display:block;font-family:"Bai Jamjuree",sans-serif;font-weight:600;font-size:1.08rem;
+  max-width:14ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pl small{opacity:.85;font-size:.78rem}
+.odds{position:relative;z-index:1;font-size:.78rem;opacity:.9;margin-top:2px}
+.court.empty{background:transparent;border:2px dashed var(--line);display:grid;place-items:center;grid-template-columns:1fr}
+.court.empty::before,.court.empty::after{display:none}
+.cc-ctrl{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.shut{flex:1 1 100%;display:flex;align-items:center;justify-content:space-between;
+  background:var(--cork-soft);color:var(--ink);border-radius:12px;padding:6px}
+.shut button{width:52px;height:44px;border:0;border-radius:9px;background:var(--surface);
+  font-size:1.4rem;font-weight:600;cursor:pointer;color:var(--cork)}
+.shut .cnt{display:flex;align-items:center;gap:8px;font-family:"Bai Jamjuree",sans-serif;font-weight:600}
+.shut .cnt svg{color:var(--cork)}
+.shut .cnt b{font-size:1.5rem}
+.cc-ctrl .btn.primary{flex:1}
+@media (min-width:560px){.shut{flex:1 1 auto}}
+
+/* ---------- คิวรอลงสนาม ---------- */
+.queue{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:8px}
+.queue .chip{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);
+  border-radius:999px;padding:6px 12px 6px 6px;cursor:pointer;font:inherit;color:inherit;min-height:40px}
+.queue .chip.next{border-color:var(--court)}
+.queue .chip.rest{border-style:dashed;padding-left:12px;background:transparent}      /* คนที่ขอพัก */
+.queue .chip.gone{padding-left:12px;background:transparent;color:var(--muted)}       /* คนที่กลับแล้ว */
+.choices{display:grid;gap:8px}
+.qn{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:.8rem;
+  background:var(--bg);font-family:"Bai Jamjuree",sans-serif;font-weight:600}
+.queue .chip.next .qn{background:var(--court);color:var(--on-court)}
+.queue small{color:var(--muted)}
+
+.log{list-style:none;padding:0;margin:0}
+.log li{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.log .m{flex:1;min-width:0}
+.log .w{font-weight:600}
+.log .sc{font-family:"Bai Jamjuree",sans-serif;font-weight:700;margin:0 6px}
+.linkbtn{border:0;background:none;color:var(--muted);text-decoration:underline;cursor:pointer;padding:6px}
+
+/* ---------- ตารางอันดับ ---------- */
+.rank{list-style:none;padding:0;margin:0}
+.rrow{width:100%;display:grid;grid-template-columns:40px 1fr auto;grid-template-rows:auto auto;column-gap:10px;
+  align-items:center;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:12px 2px;cursor:pointer}
+.rk{grid-row:span 2;font-family:"Bai Jamjuree",sans-serif;font-weight:700;font-size:1.3rem;color:var(--muted);text-align:center}
+.rank li:nth-child(-n+3) .rk{color:var(--cork)}
+.rnm{font-weight:600;display:flex;align-items:center;gap:8px;min-width:0}
+.rnm span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rt{font-family:"Bai Jamjuree",sans-serif;font-weight:700;font-size:1.1rem;text-align:right}
+.rec{font-size:.82rem;color:var(--muted)}
+.dl{font-size:.8rem;font-weight:600;text-align:right}
+.up{color:var(--court)}.down{color:var(--loss)}
+:root:not([data-theme="light"]) .up{filter:brightness(1.4)}
+.tier{font-style:normal;font-family:"Bai Jamjuree",sans-serif;font-size:.72rem;font-weight:700;
+  border:1.5px solid var(--muted);border-radius:5px;padding:0 5px;color:var(--muted);flex:none}
+/* ป้ายระดับ: t0 = ระดับสูงสุด (เช่น S), t1 = ระดับรองลงมา (เช่น A) */
+.tier.t0{background:var(--cork);border-color:var(--cork);color:#fff}
+.tier.t1{border-color:var(--court);color:var(--court)}
+
+/* ---------- หน้าค่าใช้จ่าย ---------- */
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+@media (min-width:560px){.stats{grid-template-columns:repeat(4,1fr)}}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+.stat b{display:block;font-family:"Bai Jamjuree",sans-serif;font-size:1.35rem}
+.stat span{font-size:.82rem;color:var(--muted)}
+.tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+td small{display:block;color:var(--muted);font-size:.74rem}
+th,td{padding:10px 8px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:500;color:var(--muted);font-size:.82rem}
+td.tot{font-family:"Bai Jamjuree",sans-serif;font-weight:700}
+.paid{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:4px 10px;cursor:pointer;font-size:.82rem}
+.paid[aria-pressed="true"]{background:var(--court);border-color:var(--court);color:var(--on-court)}
+.hist{list-style:none;padding:0;margin:0}
+.hist li{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+
+.empty-state{text-align:center;padding:40px 12px}
+.empty-state p{color:var(--muted);max-width:34ch;margin:8px auto 20px}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+
+/* ---------- แถบเมนูล่าง ---------- */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--surface);border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom,0px)}
+nav.tabs .in{max-width:720px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr)}
+nav.tabs button{background:none;border:0;padding:10px 4px 12px;cursor:pointer;display:grid;justify-items:center;gap:2px;
+  color:var(--muted);font-size:.82rem}
+nav.tabs button[aria-current="page"]{color:var(--court);font-weight:600}
+:root:not([data-theme="light"]) nav.tabs button[aria-current="page"]{filter:brightness(1.35)}
+
+/* ---------- หน้าต่าง popup ---------- */
+dialog{border:0;border-radius:16px;padding:0;width:min(520px,calc(100% - 24px));max-height:calc(100% - 48px);
+  background:var(--surface);color:var(--ink)}
+dialog::backdrop{background:rgba(8,16,12,.55)}
+.dlg{padding:20px}
+.dlg h2{margin-bottom:12px}
+.dlg-act{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;flex-wrap:wrap}
+.score{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:end}
+.score label{display:grid;gap:6px;font-size:.9rem}
+.score input{width:100%;padding:12px;font-size:1.6rem;text-align:center;border:1px solid var(--line);border-radius:10px;
+  background:var(--bg);font-family:"Bai Jamjuree",sans-serif;font-weight:700}
+.score .dash{padding-bottom:14px;font-size:1.4rem;color:var(--muted)}
+.err{color:var(--loss);font-size:.9rem;min-height:1.2em;margin:8px 0 0}
+.cilist{list-style:none;padding:0;margin:0 0 12px;max-height:48vh;overflow:auto;border:1px solid var(--line);border-radius:10px}
+.cilist label{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer}
+.cilist input{width:20px;height:20px;accent-color:var(--court)}
+.cilist small{margin-left:auto;color:var(--muted)}
+.inline{display:grid;grid-template-columns:1fr auto auto;gap:8px}
+.inline input,.inline select{padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);min-width:0}
+textarea{width:100%;min-height:200px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);font:inherit}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);
+  background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;opacity:0;pointer-events:none;
+  transition:opacity .2s,transform .2s;max-width:calc(100% - 32px);z-index:20;font-size:.92rem}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.note{font-size:.85rem;color:var(--muted);margin-top:14px}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+<!-- [ส่วน B] โครงหน้าจอ: หัวแอป / พื้นที่แสดงผล (ส่วน G เติมเนื้อหาให้) / เมนูล่าง / popup -->
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1 id="clubName">ก๊วนแบด</h1>
+      <div class="sub" id="sub"></div>
+    </div>
+    <button class="iconbtn" data-act="settings" aria-label="ตั้งค่า">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </button>
+  </header>
+  <main id="view"></main>
+</div>
+
+<nav class="tabs" aria-label="เมนูหลัก"><div class="in">
+  <button data-tab="court"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1"/><path d="M12 5v14M8 5v14M16 5v14M3 12h5M16 12h5"/></svg>สนาม</button>
+  <button data-tab="rank"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 20V11M10 20V5M16 20v-6M22 20H2"/></svg>อันดับ</button>
+  <button data-tab="bill"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>ค่าใช้จ่าย</button>
+</div></nav>
+
+<dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+/* =====================================================================
+   [ส่วน C] ตั้งค่าที่ปรับได้  <-- ส่วนที่แก้บ่อยที่สุด
+   ---------------------------------------------------------------------
+   แก้เฉพาะตัวเลขหรือข้อความในเครื่องหมาย '...' ระวังอย่าลบลูกน้ำ ( , )
+   ===================================================================== */
+const CONFIG={
+
+  /* ----- ค่าเริ่มต้นเมื่อเปิดแอปครั้งแรก (ภายหลังแก้ในหน้าตั้งค่าของแอปได้) ----- */
+  clubName:'ก๊วนแบด',   // ชื่อก๊วนที่แสดงหัวแอป
+  shuttlePrice:90,      // ราคาลูกแบดต่อ 1 ลูก (บาท)
+  courtFee:1200,        // ค่าคอร์ทรวมต่อวัน (บาท)
+  courts:2,             // จำนวนสนามที่ใช้ต่อวัน
+  maxCourts:8,          // จำนวนสนามสูงสุดที่ยอมให้ตั้ง
+
+  /* ----- ระดับฝีมือตอนเพิ่มสมาชิกใหม่ -----
+     label = ชื่อที่เห็นในตัวเลือก, rating = คะแนนเริ่มต้น
+     ใส่ค่าที่ใช้บ่อยสุดไว้ลำดับที่ defaultLevel (นับจาก 0) */
+  levels:[
+    {label:'มือใหม่',      rating:900},
+    {label:'ทั่วไป',       rating:1000},
+    {label:'ค่อนข้างเก่ง', rating:1100},
+    {label:'เก่ง',         rating:1200},
+  ],
+  defaultLevel:1,       // 1 = 'ทั่วไป'
+
+  /* ----- ป้ายระดับในตารางอันดับ -----
+     เรียงจากสูงไปต่ำ คะแนนตั้งแต่ min ขึ้นไปจะได้ป้ายนั้น
+     ระดับแรกได้ป้ายสีทอง ระดับที่สองได้ป้ายขอบเขียว */
+  tiers:[
+    {name:'S', min:1250},
+    {name:'A', min:1150},
+    {name:'B', min:1050},
+    {name:'C', min:950},
+    {name:'D', min:0},
+  ],
+
+  /* ----- สูตรคะแนน Elo -----
+     คะแนนที่ได้/เสียต่อเกม = K x ตัวคูณส่วนต่างสกอร์ x (ผลจริง - โอกาสชนะที่คาดไว้)
+     K มาก = คะแนนขยับแรง, K น้อย = คะแนนนิ่ง */
+  eloKNew:40,           // K ของคนที่เพิ่งเริ่ม (ให้คะแนนเข้าที่เร็ว)
+  eloKNormal:20,        // K ของคนที่เล่นมาพอสมควรแล้ว
+  eloNewGames:10,       // เล่นไม่ถึงกี่เกมถึงนับว่า "เพิ่งเริ่ม"
+  marginCap:15,         // ส่วนต่างสกอร์เกินเท่านี้ถือว่าเท่ากัน (ชนะ 21-3 = ชนะ 21-6)
+  marginDivisor:30,     // ตัวหาร: ตัวคูณ = 1 + ส่วนต่าง / ค่านี้
+                        //   ค่า 30 ทำให้ชนะขาด 15 แต้ม ได้คะแนน x1.5
+                        //   ถ้าไม่อยากให้สกอร์มีผล ใส่ 999999
+
+  /* ----- การจัดคู่ ----- */
+  repeatPartnerPenalty:60, // ลงโทษการจับคู่หูคนเดิมซ้ำในวันเดียวกัน
+                           //   มาก = หลีกเลี่ยงคู่เดิมแรงขึ้น, 0 = ไม่สนใจ
+  randomRange:25,          // ความสุ่ม: ตัวเลือกที่ห่างจากแบบที่สูสีที่สุดไม่เกินค่านี้
+                           //   จะถูกสุ่มเลือกได้ 0 = เลือกแบบสูสีที่สุดเสมอ
+
+  /* ----- ขอพัก ----- */
+  restRounds:[1,2],        // ตัวเลือก "ขอพัก" ข้ามคิวกี่รอบการจัดคู่ (เพิ่มได้ เช่น [1,2,3])
+                           //   นอกจากนี้จะมีตัวเลือก "พักจนกว่าจะบอกพร้อม" ให้เสมอ
+
+  /* ----- คิดเงิน ----- */
+  earlyLeaveCourtShare:1,  // คนที่ Check out กลับก่อน จ่ายค่าคอร์ทกี่เท่าของคนอื่น
+                           //   1 = เท่ากัน, 0.5 = ครึ่งเดียว (ส่วนที่เหลือหารกับคนที่อยู่ต่อ)
+                           //   ยอดของคนที่กลับแล้วจะล็อกไว้ ไม่เปลี่ยนแม้มีคนมาเพิ่มทีหลัง
+  roundUp:true,         // true = ปัดยอดแต่ละคนขึ้นเป็นบาทเต็ม, false = ปัดตามปกติ
+  historyLimit:60,      // เก็บประวัติวันเล่นย้อนหลังกี่วัน
+};
+/* ===================== จบส่วนตั้งค่า ===================== */
+
+const LS_KEY='badminton-club-v1';   // ชื่อที่ใช้เก็บข้อมูลในเครื่อง (ถ้าเปลี่ยน ข้อมูลเดิมจะไม่ถูกโหลด)
+const LEVELS=CONFIG.levels.map(l=>({label:l.label,r:l.rating}));
+const SHUTTLE='<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 2.5 10.6 14h2.8L19 2.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 2.5l2.2 11.5M15 2.5l-2.2 11.5M12 2v12" fill="none" stroke="currentColor" stroke-width="1.1"/><path d="M9.6 15h4.8v1.5a2.4 2.4 0 0 1-4.8 0z" fill="currentColor"/><circle cx="12" cy="18.6" r="2.6" fill="currentColor"/></svg>';
+
+/* โครงข้อมูลทั้งหมดของแอปอยู่ในตัวแปร S ตัวเดียว
+   S.settings  = ค่าตั้งต้น, S.members = รายชื่อสมาชิกพร้อมคะแนน
+   S.session   = วันเล่นที่เปิดอยู่ (null = ยังไม่เปิด), S.history = สรุปวันเล่นที่ผ่านมา */
+function defaultState(){return{v:1,rev:0,settings:{clubName:CONFIG.clubName,shuttlePrice:CONFIG.shuttlePrice,courtFee:CONFIG.courtFee,courts:CONFIG.courts},members:[],session:null,history:[]}}
+let S=defaultState();
+let tab='court';
+let pendingImport=null;
+
+/* =====================================================================
+   [ส่วน D] ตัวช่วยเล็กๆ ที่ส่วนอื่นเรียกใช้
+   ===================================================================== */
+const uid=()=>Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const M=id=>S.members.find(m=>m.id===id);
+const nm=id=>{const m=M(id);return m?m.name:'(ลบแล้ว)'};
+const tierIdx=r=>{const i=CONFIG.tiers.findIndex(t=>r>=t.min);return i<0?CONFIG.tiers.length-1:i};  // ลำดับป้ายระดับ
+const tier=r=>CONFIG.tiers[tierIdx(r)].name;                                                          // ชื่อป้ายระดับ
+const tierBadge=r=>`<i class="tier t${tierIdx(r)}">${esc(tier(r))}</i>`;                             // ป้ายระดับพร้อมสี
+const avg=ids=>ids.reduce((t,id)=>t+(M(id)?M(id).rating:1000),0)/ids.length;
+// โอกาสชนะที่คาดไว้ของทีมคะแนน ra เมื่อเจอทีมคะแนน rb (0 ถึง 1)
+const expect=(ra,rb)=>1/(1+Math.pow(10,(rb-ra)/400));
+const kOf=m=>m.games<CONFIG.eloNewGames?CONFIG.eloKNew:CONFIG.eloKNormal;  // ค่า K ของผู้เล่นคนนี้
+const baht=n=>'฿'+Math.round(n).toLocaleString('th-TH');
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+const fmtDate=iso=>new Date(iso).toLocaleDateString('th-TH',{weekday:'short',day:'numeric',month:'short',year:'2-digit'});
+const sign=n=>n>0?'+'+n:String(n);
+
+/* =====================================================================
+   [ส่วน E] บันทึกข้อมูล
+   ---------------------------------------------------------------------
+   ทุกครั้งที่เรียก save() ข้อมูลจะถูกเก็บ 2 ที่
+   1) localStorage ของ WebViewer
+   2) ส่งผ่าน WebViewString ให้บล็อก Kodular เก็บลง TinyDB1 (แท็ก "club")
+   ตอนเปิดแอป บล็อก Screen1.Initialize ส่งข้อมูลจาก TinyDB กลับมาให้
+   ส่วน connectDb ใช้เฉพาะตอนเปิดบน claude.ai ในแอปจริงจะไม่ทำงาน
+   ===================================================================== */
+let ref=null,writing=false,dirty=false,timer=null;
+const AI=window.AppInventor||null; /* present when running inside the Kodular app */
+function parseState(t){try{const d=JSON.parse(t);return d&&Array.isArray(d.members)?d:null}catch(e){return null}}
+function loadLocal(){
+  let a=null,b=null;
+  try{a=parseState(localStorage.getItem(LS_KEY))}catch(e){}
+  try{if(AI)b=parseState(AI.getWebViewString())}catch(e){}
+  const best=[a,b].filter(Boolean).sort((x,y)=>(y.rev||0)-(x.rev||0))[0];
+  if(best)S=best;
+}
+function saveLocal(){const t=JSON.stringify(S);try{localStorage.setItem(LS_KEY,t)}catch(e){}try{if(AI)AI.setWebViewString(t)}catch(e){}}
+function save(){
+  S.rev=Date.now()+Math.random();
+  saveLocal();
+  if(ref){dirty=true;clearTimeout(timer);timer=setTimeout(flush,350)}
+}
+async function flush(){
+  if(writing||!dirty||!ref)return;
+  writing=true;dirty=false;
+  const body=JSON.parse(JSON.stringify(S));
+  try{await ref.set(body)}
+  catch(e){
+    if(e&&e.code==='unavailable'){
+      await new Promise(r=>setTimeout(r,700+Math.random()*800));
+      try{await ref.set(body)}catch(e2){toast('บันทึกขึ้นระบบไม่สำเร็จ ข้อมูลยังอยู่ในเครื่องนี้')}
+    }else toast('บันทึกขึ้นระบบไม่สำเร็จ ข้อมูลยังอยู่ในเครื่องนี้');
+  }
+  writing=false;
+  if(dirty)flush();
+}
+async function connectDb(){
+  let db=null;
+  try{db=(window.claude&&window.claude.use)?await window.claude.use('db'):null}catch(e){db=null}
+  if(!db)return;
+  ref=db.doc('club/main');
+  let first=true;
+  ref.onSnapshot(snap=>{
+    if(snap.metadata.hasPendingWrites)return;
+    if(snap.exists){
+      const d=snap.data();
+      if(d&&d.rev!==S.rev&&!writing&&!dirty){S=JSON.parse(JSON.stringify(d));saveLocal();render()}
+    }else if(first&&(S.members.length||S.session)){dirty=true;flush()}
+    first=false;
+  },()=>{});
+}
+
+/* =====================================================================
+   [ส่วน F] สมองของแอป
+   ---------------------------------------------------------------------
+   queue()        เรียงคิว: คนเล่นน้อยก่อน ถ้าเท่ากัน คนรอนานก่อน
+   splitOptions() ลองแบ่ง 4 คนเป็น 2 ทีม ครบทั้ง 3 แบบ แล้วเรียงจากสูสีที่สุด
+   fillCourt()    ดึง 4 คนแรกจากคิวลงสนาม
+   recordMatch()  บันทึกผล + คำนวณ Elo
+   billRows()     คิดเงินรายคน
+   ===================================================================== */
+function onCourt(){const s=S.session;return s?s.courts.filter(Boolean).flatMap(c=>c.a.concat(c.b)):[]}
+function gamesToday(id){return S.session.matches.filter(m=>m.a.includes(id)||m.b.includes(id)).length}
+/* เติมช่องข้อมูลใหม่ให้วันเล่นที่สร้างจากเวอร์ชันก่อน */
+function ensureSession(){const s=S.session;if(!s)return;s.rest=s.rest||{};s.left=s.left||{};s.frozen=s.frozen||{};s.starts=s.starts||0}
+const hasLeft=id=>!!S.session.left[id];                       // Check out ไปแล้วหรือยัง
+function isResting(id){                                        // กำลังขอพักอยู่ไหม
+  const r=S.session.rest[id];if(r==null)return false;
+  return r==='manual'||S.session.starts<r;
+}
+const restLeft=id=>S.session.rest[id]==='manual'?null:S.session.rest[id]-S.session.starts;  // เหลือพักอีกกี่รอบ
+const activeCount=()=>S.session.present.filter(id=>!hasLeft(id)).length;
+function restingList(){const busy=new Set(onCourt());return S.session.present.filter(id=>M(id)&&!hasLeft(id)&&!busy.has(id)&&isResting(id))}
+function queue(){
+  const s=S.session,busy=new Set(onCourt());
+  return s.present.filter(id=>!busy.has(id)&&M(id)&&!hasLeft(id)&&!isResting(id))
+    .sort((x,y)=>gamesToday(x)-gamesToday(y)||(s.lastDone[x]||0)-(s.lastDone[y]||0));
+}
+function partnered(x,y){return S.session.matches.filter(m=>(m.a.includes(x)&&m.a.includes(y))||(m.b.includes(x)&&m.b.includes(y))).length}
+function teamKey(a,b){return[a.slice().sort().join('+'),b.slice().sort().join('+')].sort().join('|')}
+function splitOptions(p){
+  return[[[0,1],[2,3]],[[0,2],[1,3]],[[0,3],[1,2]]].map(([x,y])=>{
+    const a=x.map(i=>p[i]),b=y.map(i=>p[i]);
+    const diff=Math.abs(avg(a)-avg(b));
+    const rep=partnered(a[0],a[1])+partnered(b[0],b[1]);
+    return{a,b,diff,score:diff+CONFIG.repeatPartnerPenalty*rep};  // คะแนนยิ่งน้อยยิ่งดี
+  }).sort((u,v)=>u.score-v.score);
+}
+function fillCourt(i){
+  const q=queue();
+  if(q.length<4){const r=restingList().length;toast('ต้องมีคนรออย่างน้อย 4 คน ตอนนี้มี '+q.length+' คน'+(r?' (พักอยู่ '+r+' คน)':''));return}
+  const opts=splitOptions(q.slice(0,4));
+  const near=opts.filter(o=>o.score<=opts[0].score+CONFIG.randomRange);  // ตัวเลือกที่สูสีพอกัน
+  const pick=near[Math.floor(Math.random()*near.length)];
+  S.session.courts[i]={a:pick.a,b:pick.b,shuttles:1,startedAt:Date.now()};
+  S.session.starts++;   // นับรอบการจัดคู่ ใช้นับถอยหลังคนที่ขอพัก
+  save();render();
+}
+function swapTeams(i){
+  const c=S.session.courts[i];
+  const opts=splitOptions(c.a.concat(c.b));
+  const cur=teamKey(c.a,c.b);
+  const idx=opts.findIndex(o=>teamKey(o.a,o.b)===cur);
+  const nx=opts[(idx+1)%opts.length];
+  c.a=nx.a;c.b=nx.b;save();render();
+}
+function recordMatch(i,sa,sb){
+  const s=S.session,c=s.courts[i];
+  const ea=expect(avg(c.a),avg(c.b)),aw=sa>sb?1:0,mg=1+Math.min(Math.abs(sa-sb),CONFIG.marginCap)/CONFIG.marginDivisor;  // ea=โอกาสชนะทีม A, aw=ทีม A ชนะไหม, mg=ตัวคูณส่วนต่างสกอร์
+  const deltas={};
+  c.a.forEach(id=>{const m=M(id);if(m)deltas[id]=Math.round(kOf(m)*mg*(aw-ea))});
+  c.b.forEach(id=>{const m=M(id);if(m)deltas[id]=Math.round(kOf(m)*mg*((1-aw)-(1-ea)))});
+  Object.keys(deltas).forEach(id=>{
+    const m=M(id);m.rating+=deltas[id];m.games++;
+    const won=(c.a.includes(id)&&aw)||(c.b.includes(id)&&!aw);
+    if(won)m.wins++;else m.losses++;
+  });
+  const now=Date.now();
+  s.matches.push({id:uid(),court:i+1,a:c.a,b:c.b,sa,sb,shuttles:c.shuttles,deltas,at:now});
+  c.a.concat(c.b).forEach(id=>s.lastDone[id]=now);
+  s.courts[i]=null;
+  save();render();
+  const win=aw?c.a:c.b;
+  toast(win.map(nm).join(' / ')+' ชนะ  คะแนนอัปเดตแล้ว');
+}
+function undoMatch(mid){
+  const s=S.session,k=s.matches.findIndex(m=>m.id===mid);if(k<0)return;
+  const m=s.matches[k],aw=m.sa>m.sb;
+  Object.keys(m.deltas).forEach(id=>{
+    const p=M(id);if(!p)return;
+    p.rating-=m.deltas[id];p.games=Math.max(0,p.games-1);
+    const won=(m.a.includes(id)&&aw)||(m.b.includes(id)&&!aw);
+    if(won)p.wins=Math.max(0,p.wins-1);else p.losses=Math.max(0,p.losses-1);
+  });
+  s.matches.splice(k,1);save();render();toast('ลบผลเกมแล้ว คะแนนย้อนกลับแล้ว');
+}
+function todayDelta(id){
+  if(!S.session)return 0;
+  return S.session.matches.reduce((t,m)=>t+(m.deltas[id]||0),0);
+}
+// ค่าลูกหารเฉพาะ 4 คนในเกมนั้น ค่าคอร์ทหารเท่ากันทุกคนที่เช็คอิน
+/* ค่าคอร์ทรายคน: คนที่ Check out แล้วใช้ยอดที่ล็อกไว้ ที่เหลือหารเท่ากันกับคนที่อยู่ */
+function courtShares(){
+  const s=S.session,fz=s.frozen,out={};
+  const fixed=s.present.filter(id=>fz[id]!=null),others=s.present.filter(id=>fz[id]==null);
+  const rest=Math.max(0,s.courtFee-fixed.reduce((t,id)=>t+fz[id],0));
+  fixed.forEach(id=>out[id]=fz[id]);
+  others.forEach(id=>out[id]=rest/others.length);
+  return out;
+}
+/* ล็อกค่าคอร์ทของคนที่กำลังจะ Check out */
+function freezeCourtShare(id){
+  const s=S.session,fz=s.frozen,w=CONFIG.earlyLeaveCourtShare;
+  const others=s.present.filter(x=>fz[x]==null);
+  const rest=Math.max(0,s.courtFee-s.present.filter(x=>fz[x]!=null).reduce((t,x)=>t+fz[x],0));
+  fz[id]=others.length?rest*w/(others.length-1+w):0;
+}
+function billRows(){
+  const s=S.session,cs=courtShares();
+  return s.present.map(id=>{
+    const courtShare=cs[id]||0;
+    let g=0,sh=0;
+    s.matches.forEach(m=>{if(m.a.includes(id)||m.b.includes(id)){g++;sh+=m.shuttles/4}});
+    const shuttleCost=sh*s.shuttlePrice;
+    return{id,g,sh,shuttleCost,courtShare,total:(CONFIG.roundUp?Math.ceil:Math.round)(shuttleCost+courtShare),paid:!!s.paid[id],left:hasLeft(id)};
+  });
+}
+function resizeCourts(n){
+  const c=S.session.courts;
+  while(c.length<n)c.push(null);
+  while(c.length>n&&c[c.length-1]===null)c.pop();
+}
+
+/* =====================================================================
+   [ส่วน G] สร้างหน้าจอแต่ละแท็บ
+   ---------------------------------------------------------------------
+   viewCourt() = แท็บสนาม, viewRank() = แท็บอันดับ, viewBill() = แท็บค่าใช้จ่าย
+   แต่ละฟังก์ชันคืนค่าเป็นข้อความ HTML แล้ว render() นำไปแสดง
+   ข้อความภาษาไทยที่เห็นบนจอ แก้ได้ตรงๆ ในส่วนนี้
+   ===================================================================== */
+function playerHtml(id){const m=M(id);return`<div class="pl"><b>${esc(nm(id))}</b><small>${m?m.rating+' ระดับ '+esc(tier(m.rating)):''}</small></div>`}
+function courtCard(c,i){
+  if(!c)return`<article class="cc"><div class="cc-h"><h3>สนาม ${i+1}</h3><span class="sub">ว่าง</span></div>
+    <div class="court empty"><button class="btn primary" data-act="fill" data-i="${i}">จัดคู่ลงสนามนี้</button></div></article>`;
+  const ra=avg(c.a),rb=avg(c.b),pa=Math.round(expect(ra,rb)*100);
+  return`<article class="cc"><div class="cc-h"><h3>สนาม ${i+1}</h3><span class="sub">โอกาสชนะ ${pa}% ต่อ ${100-pa}%</span></div>
+  <div class="court" role="group" aria-label="สนาม ${i+1}">
+    <div class="half a">${c.a.map(playerHtml).join('')}</div>
+    <div class="half b">${c.b.map(playerHtml).join('')}</div>
+  </div>
+  <div class="cc-ctrl">
+    <div class="shut"><button data-act="shMinus" data-i="${i}" aria-label="ลดจำนวนลูก">−</button>
+      <span class="cnt">${SHUTTLE}<b>${c.shuttles}</b> ลูก</span>
+      <button data-act="shPlus" data-i="${i}" aria-label="เพิ่มจำนวนลูก">+</button></div>
+    <button class="btn ghost" data-act="swap" data-i="${i}">สลับทีม</button>
+    <button class="btn ghost" data-act="cancelCourt" data-i="${i}">ยกเลิก</button>
+    <button class="btn primary" data-act="finish" data-i="${i}">จบเกม</button>
+  </div></article>`;
+}
+function viewCourt(){
+  if(!S.members.length)return`<div class="empty-state"><h2>เริ่มจากเพิ่มสมาชิกในก๊วน</h2>
+    <p>ใส่ชื่อและระดับฝีมือคร่าวๆ ระบบจะปรับคะแนนให้ตรงฝีมือจริงเองหลังเล่นไปไม่กี่เกม</p>
+    <div class="row"><button class="btn primary" data-act="addMember">เพิ่มสมาชิก</button>
+    <button class="btn ghost" data-act="demo">ลองด้วยข้อมูลตัวอย่าง</button></div></div>`;
+  const st=S.settings;
+  if(!S.session)return`<div class="panel"><h2>เริ่มวันเล่นใหม่</h2><p class="sub" style="margin:4px 0 16px">ตั้งราคาไว้สำหรับคิดเงินตอนท้ายวัน แก้ทีหลังได้ที่ปุ่มตั้งค่า</p>
+    <div class="grid3">
+      <label class="field"><span>ราคาลูกละ (บาท)</span><input id="fShuttle" type="number" inputmode="numeric" min="0" value="${st.shuttlePrice}"></label>
+      <label class="field"><span>ค่าคอร์ทรวม (บาท)</span><input id="fCourt" type="number" inputmode="numeric" min="0" value="${st.courtFee}"></label>
+      <label class="field"><span>จำนวนสนาม</span><input id="fCourts" type="number" inputmode="numeric" min="1" max="${CONFIG.maxCourts}" value="${st.courts}"></label>
+    </div>
+    <button class="btn primary" data-act="start" style="width:100%">เริ่มวันเล่นและเช็คอิน</button></div>`;
+  const s=S.session,q=queue(),rs=restingList(),lf=s.present.filter(id=>M(id)&&hasLeft(id));
+  const log=s.matches.slice().reverse().map(m=>{
+    const aw=m.sa>m.sb;
+    return`<li><div class="m"><span class="${aw?'w':''}">${m.a.map(x=>esc(nm(x))).join(' / ')}</span><span class="sc">${m.sa}–${m.sb}</span><span class="${aw?'':'w'}">${m.b.map(x=>esc(nm(x))).join(' / ')}</span>
+      <div class="sub">สนาม ${m.court}, ใช้ ${m.shuttles} ลูก</div></div>
+      <button class="linkbtn" data-act="undo" data-id="${m.id}">ลบผล</button></li>`}).join('');
+  return`<div class="bar"><button class="btn ghost" data-act="checkin">อยู่ในก๊วน ${activeCount()} คน</button>
+    <span class="sub">รอเล่น ${q.length} คน</span></div>
+    ${s.courts.map(courtCard).join('')}
+    <section><h2>คิวรอลงสนาม</h2>
+    ${q.length?`<ol class="queue">${q.map((id,k)=>`<li><button class="chip ${k<4?'next':''}" data-act="qPlayer" data-id="${id}"><span class="qn">${k+1}</span>${esc(nm(id))}<small>${gamesToday(id)} เกม</small></button></li>`).join('')}</ol>
+    <p class="note">คนที่เล่นน้อยและรอนานได้ลงก่อน 4 คนแรกคือชุดถัดไป แตะชื่อเพื่อขอพักหรือ Check out</p>`:`<p class="sub">${activeCount()?(rs.length?'ที่เหลือกำลังเล่นหรือพักอยู่':'ทุกคนกำลังเล่นอยู่'):'ยังไม่มีใครเช็คอิน กดปุ่มด้านบน'}</p>`}
+    </section>
+    ${rs.length?`<section><h2>ขอพัก</h2><ol class="queue">${rs.map(id=>{const n=restLeft(id);
+      return`<li><button class="chip rest" data-act="qPlayer" data-id="${id}">${esc(nm(id))}<small>${n==null?'รอบอกพร้อม':'อีก '+n+' รอบ'}</small></button></li>`}).join('')}</ol></section>`:''}
+    ${lf.length?`<section><h2>กลับแล้ว</h2><ol class="queue">${lf.map(id=>`<li><button class="chip gone" data-act="qPlayer" data-id="${id}">${esc(nm(id))}<small>${s.paid[id]?'จ่ายแล้ว':'ค้างจ่าย'}</small></button></li>`).join('')}</ol></section>`:''}
+    <section><h2>ผลเกมวันนี้</h2>${log?`<ul class="log">${log}</ul>`:'<p class="sub">ยังไม่มีเกมที่จบ</p>'}</section>`;
+}
+function viewRank(){
+  if(!S.members.length)return viewCourt();
+  const list=S.members.slice().sort((x,y)=>y.rating-x.rating);
+  return`<div class="bar"><h2>อันดับสมาชิก</h2><button class="btn ghost" data-act="addMember">เพิ่มสมาชิก</button></div>
+  <ol class="rank">${list.map((m,k)=>{
+    const d=todayDelta(m.id),pct=m.games?Math.round(m.wins/m.games*100):0;
+    return`<li><button class="rrow" data-act="member" data-id="${m.id}">
+      <span class="rk">${k+1}</span>
+      <span class="rnm"><span>${esc(m.name)}</span>${tierBadge(m.rating)}</span>
+      <span class="rt">${m.rating}</span>
+      <span class="rec">ชนะ ${m.wins} แพ้ ${m.losses}${m.games?` (${pct}%)`:''}${m.games<CONFIG.eloNewGames?', ช่วงปรับคะแนน':''}</span>
+      <span class="dl ${d>0?'up':d<0?'down':''}">${d?'วันนี้ '+sign(d):''}</span>
+    </button></li>`}).join('')}</ol>
+  <p class="note">คะแนนคิดแบบ Elo: ชนะทีมที่เก่งกว่าได้คะแนนมาก ชนะทีมที่อ่อนกว่าได้คะแนนน้อย ชนะขาดได้มากกว่าชนะเฉียด ${CONFIG.eloNewGames} เกมแรกคะแนนขยับแรงกว่าปกติเพื่อให้เข้าที่เร็ว ${CONFIG.tiers.filter(t=>t.min>0).map(t=>'ระดับ '+esc(t.name)+' ตั้งแต่ '+t.min).join(', ')}</p>`;
+}
+function viewBill(){
+  const hist=S.history.length?`<section><h2>วันเล่นที่ผ่านมา</h2><ul class="hist">${S.history.map(h=>`<li><div><b>${fmtDate(h.date)}</b><div class="sub">${h.players} คน ${h.matches} เกม ใช้ ${h.shuttles} ลูก</div></div><div class="num" style="text-align:right"><b>${baht(h.total)}</b><div class="sub">เก็บได้ ${baht(h.collected)}</div></div></li>`).join('')}</ul></section>`:'';
+  if(!S.session)return`<div class="empty-state"><h2>ยังไม่มีวันเล่นที่เปิดอยู่</h2><p>เริ่มวันเล่นที่แท็บสนาม ค่าใช้จ่ายของแต่ละคนจะคำนวณให้ที่นี่ทันทีที่จบเกม</p>
+    <button class="btn primary" data-act="tab" data-id="court">ไปที่สนาม</button></div>${hist}`;
+  const s=S.session,rows=billRows();
+  const shuttles=s.matches.reduce((t,m)=>t+m.shuttles,0);
+  const total=rows.reduce((t,r)=>t+r.total,0),got=rows.filter(r=>r.paid).reduce((t,r)=>t+r.total,0);
+  const live=onCourt().length?'<p class="note">เกมที่ยังเล่นอยู่ยังไม่นับรวม จะเข้ามาเมื่อกดจบเกม</p>':'';
+  return`<div class="bar"><h2>ค่าใช้จ่ายวันนี้</h2><span class="sub">${fmtDate(s.date)}</span></div>
+  <div class="stats">
+    <div class="stat"><b>${shuttles}</b><span>ลูกที่ใช้ (${baht(shuttles*s.shuttlePrice)})</span></div>
+    <div class="stat"><b>${baht(s.courtFee)}</b><span>ค่าคอร์ท ${s.present.length} คน${Object.keys(s.left).length?' (กลับแล้ว '+Object.keys(s.left).length+')':''}</span></div>
+    <div class="stat"><b>${baht(total)}</b><span>ยอดเรียกเก็บรวม</span></div>
+    <div class="stat"><b>${baht(total-got)}</b><span>ยังค้างจ่าย</span></div>
+  </div>
+  ${rows.length?`<div class="tablewrap"><table><thead><tr><th>ชื่อ</th><th>ค่าลูก</th><th>คอร์ท</th><th>รวม</th><th></th></tr></thead><tbody>
+  ${rows.sort((a,b)=>b.total-a.total).map(r=>`<tr><td>${esc(nm(r.id))}<small>${r.g} เกม${r.left?', กลับแล้ว':''}</small></td><td>${baht(r.shuttleCost)}<small>${+r.sh.toFixed(2)} ลูก</small></td><td>${baht(r.courtShare)}</td><td class="tot">${baht(r.total)}</td>
+    <td><button class="paid" data-act="paid" data-id="${r.id}" aria-pressed="${r.paid}">${r.paid?'จ่ายแล้ว':'ค้างจ่าย'}</button></td></tr>`).join('')}
+  </tbody></table></div>`:'<p class="sub">ยังไม่มีใครเช็คอิน</p>'}
+  ${live}
+  <p class="note">ค่าลูกหารเฉพาะ 4 คนในเกมนั้น ค่าคอร์ทหารเท่ากันทุกคนที่เช็คอิน ${CONFIG.roundUp?'ยอดรวมปัดขึ้นเป็นบาท':'ยอดรวมปัดเป็นบาท'}</p>
+  <div class="row" style="justify-content:flex-start;margin-top:16px">
+    <button class="btn ghost" data-act="copyBill">คัดลอกสรุปส่งไลน์</button>
+    <button class="btn danger" data-act="closeSession">ปิดวันเล่น</button>
+  </div>${hist}`;
+}
+function render(){
+  $('#clubName').textContent=S.settings.clubName||'ก๊วนแบด';
+  const s=S.session;
+  ensureSession();
+  $('#sub').textContent=s?`วันเล่น ${fmtDate(s.date)}, ${activeCount()} คน ${s.courts.length} สนาม`:`สมาชิก ${S.members.length} คน`;
+  document.querySelectorAll('nav.tabs button').forEach(b=>{if(b.dataset.tab===tab)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
+  $('#view').innerHTML=tab==='court'?viewCourt():tab==='rank'?viewRank():viewBill();
+}
+
+/* =====================================================================
+   [ส่วน H] หน้าต่าง popup (เพิ่มสมาชิก, เช็คอิน, กรอกสกอร์, ตั้งค่า ฯลฯ)
+   ===================================================================== */
+const dlg=$('#dlg');
+function openDlg(html){$('#dlgBody').innerHTML=html;if(!dlg.open)dlg.showModal();const f=dlg.querySelector('[data-focus]');if(f)f.focus()}
+function closeDlg(){if(dlg.open)dlg.close()}
+dlg.addEventListener('click',e=>{if(e.target===dlg)closeDlg()});
+const levelOpts=(sel=CONFIG.defaultLevel)=>LEVELS.map((l,k)=>`<option value="${l.r}" ${k===sel?'selected':''}>${l.label} (${l.r})</option>`).join('');
+
+function openAddMember(){
+  openDlg(`<h2>เพิ่มสมาชิก</h2>
+  <label class="field"><span>ชื่อเล่น</span><input id="mName" maxlength="24" data-focus></label>
+  <label class="field"><span>ระดับฝีมือเริ่มต้น</span><select id="mLevel">${levelOpts()}</select></label>
+  ${S.session?'<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="mIn" checked> เช็คอินวันนี้ด้วย</label>':''}
+  <p class="err" id="err"></p>
+  <div class="dlg-act"><button class="btn ghost" data-act="close">ยกเลิก</button><button class="btn primary" data-act="saveMember">เพิ่มสมาชิก</button></div>`);
+}
+function newMember(name,rating){const m={id:uid(),name,rating,games:0,wins:0,losses:0};S.members.push(m);return m}
+function openCheckin(){
+  const s=S.session,busy=new Set(onCourt());
+  const list=S.members.slice().sort((a,b)=>a.name.localeCompare(b.name,'th'));
+  openDlg(`<h2>เช็คอินวันนี้</h2>
+  <ul class="cilist">${list.map(m=>{
+    const gone=s.present.includes(m.id)&&hasLeft(m.id);
+    const locked=busy.has(m.id)||gamesToday(m.id)>0||gone;
+    return`<li><label><input type="checkbox" class="ci" value="${m.id}" ${s.present.includes(m.id)?'checked':''} ${locked?'disabled':''}>
+    ${esc(m.name)} ${tierBadge(m.rating)}<small>${gone?'กลับแล้ว':locked?(busy.has(m.id)?'อยู่ในสนาม':'เล่นไปแล้ว'):''}</small></label></li>`}).join('')}</ul>
+  <div class="inline"><input id="qName" placeholder="คนใหม่ หรือแขก" maxlength="24"><select id="qLevel">${levelOpts()}</select><button class="btn ghost" data-act="quickAdd">เพิ่ม</button></div>
+  <div class="dlg-act"><button class="btn primary" data-act="close">เสร็จ</button></div>`);
+}
+/* popup เมื่อแตะชื่อในคิว / คนที่พัก / คนที่กลับแล้ว */
+function openPlayer(id){
+  const s=S.session,row=billRows().find(r=>r.id===id);if(!row)return;
+  const info=`<p class="sub" style="margin:-6px 0 14px">เล่นวันนี้ ${row.g} เกม ยอดตอนนี้ ${baht(row.total)}</p>`;
+  if(hasLeft(id))return openDlg(`<h2>${esc(nm(id))} กลับแล้ว</h2>${info}<div class="choices">
+    <button class="btn ${row.paid?'ghost':'primary'}" data-act="paid" data-id="${id}">${row.paid?'ยกเลิกสถานะจ่ายแล้ว':'รับเงินแล้ว '+baht(row.total)}</button>
+    <button class="btn ghost" data-act="rejoin" data-id="${id}">กลับมาเล่นต่อ</button>
+    <button class="btn ghost" data-act="close">ปิด</button></div>`);
+  const resting=isResting(id);
+  openDlg(`<h2>${esc(nm(id))}</h2>${info}<div class="choices">
+    ${resting?`<button class="btn primary" data-act="ready" data-id="${id}">พร้อมเล่นแล้ว กลับเข้าคิว</button>`:
+      CONFIG.restRounds.map(n=>`<button class="btn ghost" data-act="rest" data-id="${id}" data-i="${n}">ขอพัก ข้ามคิว ${n} รอบ</button>`).join('')+
+      `<button class="btn ghost" data-act="rest" data-id="${id}" data-i="0">พักจนกว่าจะบอกพร้อม</button>`}
+    <button class="btn danger" data-act="checkout" data-id="${id}">Check out กลับก่อน</button>
+    <button class="btn ghost" data-act="close">ยกเลิก</button></div>
+    ${resting?'':'<p class="note">คนที่พักจะไม่เสียลำดับ พอพักครบจะได้ลงก่อนตามจำนวนเกมที่เล่นน้อย</p>'}`);
+}
+function openCheckout(id){
+  const s=S.session,fz=Object.assign({},s.frozen);
+  freezeCourtShare(id);const row=billRows().find(r=>r.id===id);s.frozen=fz;   // คำนวณยอดล่วงหน้า ยังไม่บันทึก
+  openDlg(`<h2>Check out ${esc(nm(id))}?</h2>
+  <div class="stats" style="grid-template-columns:repeat(3,1fr)">
+    <div class="stat"><b>${baht(row.shuttleCost)}</b><span>ค่าลูก ${+row.sh.toFixed(2)} ลูก</span></div>
+    <div class="stat"><b>${baht(row.courtShare)}</b><span>ค่าคอร์ท</span></div>
+    <div class="stat"><b>${baht(row.total)}</b><span>ยอดที่ต้องจ่าย</span></div></div>
+  <p class="sub">หลัง Check out จะไม่ถูกจัดลงสนามอีก และยอดนี้จะล็อกไว้</p>
+  <div class="dlg-act"><button class="btn ghost" data-act="close">ยกเลิก</button>
+  <button class="btn ghost" data-act="doCheckout" data-id="${id}">Check out ยังไม่จ่าย</button>
+  <button class="btn primary" data-act="doCheckout" data-id="${id}" data-i="1">รับเงินแล้ว และ Check out</button></div>`);
+}
+function openFinish(i){
+  const c=S.session.courts[i];
+  openDlg(`<h2>ผลสนาม ${i+1}</h2>
+  <div class="score">
+    <label>${c.a.map(x=>esc(nm(x))).join(' / ')}<input id="sa" type="number" inputmode="numeric" min="0" max="99" data-focus></label>
+    <span class="dash">–</span>
+    <label>${c.b.map(x=>esc(nm(x))).join(' / ')}<input id="sb" type="number" inputmode="numeric" min="0" max="99"></label>
+  </div>
+  <p class="sub" style="margin-top:12px">เกมนี้ใช้ลูก ${c.shuttles} ลูก คนละ ${baht(c.shuttles*S.session.shuttlePrice/4)}</p>
+  <p class="err" id="err"></p>
+  <div class="dlg-act"><button class="btn ghost" data-act="close">ยกเลิก</button><button class="btn primary" data-act="saveScore" data-i="${i}">บันทึกผล</button></div>`);
+}
+function openMember(id){
+  const m=M(id);if(!m)return;
+  const pct=m.games?Math.round(m.wins/m.games*100):0;
+  openDlg(`<h2>${esc(m.name)}</h2>
+  <div class="stats" style="grid-template-columns:repeat(3,1fr)">
+    <div class="stat"><b>${m.rating}</b><span>คะแนน ระดับ ${esc(tier(m.rating))}</span></div>
+    <div class="stat"><b>${m.games}</b><span>เกมทั้งหมด</span></div>
+    <div class="stat"><b>${pct}%</b><span>อัตราชนะ</span></div>
+  </div>
+  <label class="field"><span>ชื่อเล่น</span><input id="eName" maxlength="24" value="${esc(m.name)}"></label>
+  <p class="err" id="err"></p>
+  <div class="dlg-act"><button class="btn danger" data-act="delMember" data-id="${id}">ลบสมาชิก</button><span style="flex:1"></span>
+  <button class="btn ghost" data-act="close">ปิด</button><button class="btn primary" data-act="renameMember" data-id="${id}">บันทึกชื่อ</button></div>`);
+}
+function openSettings(){
+  const st=S.settings,s=S.session;
+  openDlg(`<h2>ตั้งค่า</h2>
+  <label class="field"><span>ชื่อก๊วน</span><input id="sName" maxlength="30" value="${esc(st.clubName)}"></label>
+  ${s?`<h3 style="margin:14px 0 8px">วันเล่นนี้</h3><div class="grid3">
+    <label class="field"><span>ราคาลูก</span><input id="tShuttle" type="number" min="0" value="${s.shuttlePrice}"></label>
+    <label class="field"><span>ค่าคอร์ทรวม</span><input id="tCourt" type="number" min="0" value="${s.courtFee}"></label>
+    <label class="field"><span>จำนวนสนาม</span><input id="tCourts" type="number" min="1" max="${CONFIG.maxCourts}" value="${s.courts.length}"></label></div>`:''}
+  <h3 style="margin:14px 0 8px">ค่าเริ่มต้นของวันเล่นใหม่</h3><div class="grid3">
+    <label class="field"><span>ราคาลูก</span><input id="dShuttle" type="number" min="0" value="${st.shuttlePrice}"></label>
+    <label class="field"><span>ค่าคอร์ทรวม</span><input id="dCourt" type="number" min="0" value="${st.courtFee}"></label>
+    <label class="field"><span>จำนวนสนาม</span><input id="dCourts" type="number" min="1" max="${CONFIG.maxCourts}" value="${st.courts}"></label></div>
+  <h3 style="margin:14px 0 8px">สำรองข้อมูล</h3>
+  <p class="sub" style="margin:0 0 8px">ข้อมูลเก็บอยู่ในเครื่องนี้ ควรสำรองเก็บไว้เป็นระยะ หรือใช้ย้ายไปเครื่องใหม่</p>
+  <div class="row" style="justify-content:flex-start"><button class="btn ghost" data-act="exportData">สำรองเป็นไฟล์</button><button class="btn ghost" data-act="importData">กู้คืนจากไฟล์</button></div>
+  <div class="dlg-act" style="justify-content:space-between"><div class="row"><button class="btn ghost" data-act="demo">ใส่ข้อมูลตัวอย่าง</button><button class="btn danger" data-act="wipe">ลบข้อมูลทั้งหมด</button></div>
+  <div class="row"><button class="btn ghost" data-act="close">ยกเลิก</button><button class="btn primary" data-act="saveSettings">บันทึก</button></div></div>`);
+}
+function confirmDlg(title,text,act,label,id){
+  openDlg(`<h2>${title}</h2><p>${text}</p><div class="dlg-act"><button class="btn ghost" data-act="close">ยกเลิก</button>
+  <button class="btn ${act==='doWipe'||act==='doDel'?'danger':'primary'}" data-act="${act}" ${id?`data-id="${id}"`:''}>${label}</button></div>`);
+}
+function err(t){const e=$('#err');if(e)e.textContent=t}
+
+// ข้อมูลตัวอย่าง: เปลี่ยนชื่อและคะแนนได้ที่รายการ names ด้านล่าง
+function loadDemo(){
+  const names=[['ปอ',1240],['บี',1185],['ต้น',1150],['นุ่น',1120],['แบงค์',1090],['มิว',1060],['เจ',1030],['ฝน',1005],['โอ๊ต',980],['แพร',955],['กอล์ฟ',930],['เฟิร์น',905],['ภูมิ',1010],['ใบเตย',880]];
+  S=defaultState();
+  names.forEach(([n,r],k)=>{const g=12+(k*7)%19,w=Math.round(g*clamp(.5+(r-1050)/500,.15,.85));S.members.push({id:uid(),name:n,rating:r,games:g,wins:w,losses:g-w})});
+  S.session={id:uid(),date:new Date().toISOString(),shuttlePrice:S.settings.shuttlePrice,courtFee:S.settings.courtFee,courts:Array(S.settings.courts).fill(null),present:S.members.slice(0,12).map(m=>m.id),paid:{},matches:[],lastDone:{},rest:{},left:{},frozen:{},starts:0};
+  tab='court';save();render();closeDlg();toast('ใส่ข้อมูลตัวอย่างแล้ว 12 คนเช็คอินพร้อมเล่น');
+}
+function billText(){
+  const s=S.session,rows=billRows().sort((a,b)=>b.total-a.total);
+  const sh=s.matches.reduce((t,m)=>t+m.shuttles,0);
+  return`${S.settings.clubName} ${fmtDate(s.date)}\nใช้ลูก ${sh} ลูก ค่าคอร์ท ${baht(s.courtFee)}\n\n`+
+    rows.map(r=>`${nm(r.id)}  ${baht(r.total)}${r.paid?' (จ่ายแล้ว)':''}`).join('\n')+
+    `\n\nรวม ${baht(rows.reduce((t,r)=>t+r.total,0))}`;
+}
+
+/* =====================================================================
+   [ส่วน I] ปุ่มกดแต่ละปุ่มทำอะไร
+   ---------------------------------------------------------------------
+   ปุ่มใน HTML มี data-act="ชื่อ" จะเรียกฟังก์ชันชื่อเดียวกันในรายการ ACT
+   เช่น <button data-act="finish"> เรียก ACT.finish
+   ถ้าจะเพิ่มปุ่มใหม่: ใส่ data-act="ชื่อใหม่" ที่ปุ่ม แล้วเพิ่ม ชื่อใหม่:()=>{...} ใน ACT
+   ===================================================================== */
+const ACT={
+  tab:(t,i,id)=>{tab=id;render();window.scrollTo(0,0)},
+  close:closeDlg,
+  settings:openSettings,
+  addMember:openAddMember,
+  demo:()=>{if(S.members.length&&!dlg.querySelector('[data-act="doDemo"]'))confirmDlg('แทนที่ด้วยข้อมูลตัวอย่าง?','สมาชิก คะแนน และประวัติทั้งหมดตอนนี้จะถูกแทนที่','doDemo','แทนที่ข้อมูล');else loadDemo()},
+  doDemo:loadDemo,
+  wipe:()=>confirmDlg('ลบข้อมูลทั้งหมด?','สมาชิก คะแนน วันเล่น และประวัติจะหายทั้งหมด ย้อนกลับไม่ได้','doWipe','ลบทั้งหมด'),
+  doWipe:()=>{S=defaultState();save();closeDlg();render();toast('ลบข้อมูลทั้งหมดแล้ว')},
+  saveMember:()=>{
+    const n=$('#mName').value.trim();if(!n)return err('ใส่ชื่อก่อน');
+    if(S.members.some(m=>m.name===n))return err('มีชื่อนี้อยู่แล้ว ลองเติมตัวอักษรให้ต่างกัน');
+    const m=newMember(n,+$('#mLevel').value);
+    const ci=$('#mIn');if(S.session&&ci&&ci.checked)S.session.present.push(m.id);
+    save();closeDlg();render();toast('เพิ่ม '+n+' แล้ว');
+  },
+  start:()=>{
+    const sp=Math.max(0,+$('#fShuttle').value||0),cf=Math.max(0,+$('#fCourt').value||0),n=clamp(Math.round(+$('#fCourts').value||1),1,CONFIG.maxCourts);
+    Object.assign(S.settings,{shuttlePrice:sp,courtFee:cf,courts:n});
+    S.session={id:uid(),date:new Date().toISOString(),shuttlePrice:sp,courtFee:cf,courts:Array(n).fill(null),present:[],paid:{},matches:[],lastDone:{},rest:{},left:{},frozen:{},starts:0};
+    save();render();openCheckin();
+  },
+  checkin:openCheckin,
+  qPlayer:(t,i,id)=>openPlayer(id),
+  rest:(t,i,id)=>{
+    const s=S.session;s.rest[id]=i?s.starts+i:'manual';save();closeDlg();render();
+    toast(nm(id)+(i?' พักข้าม '+i+' รอบ':' พักจนกว่าจะบอกพร้อม'));
+  },
+  ready:(t,i,id)=>{delete S.session.rest[id];save();closeDlg();render();toast(nm(id)+' กลับเข้าคิวแล้ว')},
+  checkout:(t,i,id)=>{if(onCourt().includes(id))return toast('ยังอยู่ในสนาม จบเกมก่อน');openCheckout(id)},
+  doCheckout:(t,i,id)=>{
+    const s=S.session;freezeCourtShare(id);s.left[id]=Date.now();delete s.rest[id];
+    if(i)s.paid[id]=true;save();closeDlg();render();
+    toast(nm(id)+' Check out แล้ว'+(i?' รับเงินเรียบร้อย':' (ค้างจ่าย)'));
+  },
+  rejoin:(t,i,id)=>{const s=S.session;delete s.left[id];delete s.frozen[id];save();closeDlg();render();toast(nm(id)+' กลับมาเล่นต่อ ยอดเงินจะคิดใหม่')},
+  quickAdd:()=>{
+    const n=$('#qName').value.trim();if(!n)return;
+    if(S.members.some(m=>m.name===n)){toast('มีชื่อนี้อยู่แล้ว');return}
+    const m=newMember(n,+$('#qLevel').value);S.session.present.push(m.id);save();render();openCheckin();
+  },
+  fill:(t,i)=>fillCourt(i),
+  swap:(t,i)=>swapTeams(i),
+  cancelCourt:(t,i)=>{S.session.courts[i]=null;save();render()},
+  shPlus:(t,i)=>{const c=S.session.courts[i];c.shuttles=Math.min(99,c.shuttles+1);save();render()},
+  shMinus:(t,i)=>{const c=S.session.courts[i];c.shuttles=Math.max(0,c.shuttles-1);save();render()},
+  finish:(t,i)=>openFinish(i),
+  saveScore:(t,i)=>{
+    const a=$('#sa').value,b=$('#sb').value;
+    if(a===''||b==='')return err('กรอกคะแนนทั้งสองทีม');
+    const sa=Math.round(+a),sb=Math.round(+b);
+    if(sa<0||sb<0||sa>99||sb>99)return err('คะแนนต้องอยู่ระหว่าง 0 ถึง 99');
+    if(sa===sb)return err('คะแนนเท่ากันไม่ได้ ต้องมีทีมชนะ');
+    closeDlg();recordMatch(i,sa,sb);
+  },
+  undo:(t,i,id)=>confirmDlg('ลบผลเกมนี้?','คะแนน Elo และค่าลูกของเกมนี้จะถูกย้อนกลับ','doUndo','ลบผลเกม',id),
+  doUndo:(t,i,id)=>{closeDlg();undoMatch(id)},
+  member:(t,i,id)=>openMember(id),
+  renameMember:(t,i,id)=>{
+    const n=$('#eName').value.trim();if(!n)return err('ใส่ชื่อก่อน');
+    if(S.members.some(m=>m.name===n&&m.id!==id))return err('มีชื่อนี้อยู่แล้ว');
+    M(id).name=n;save();closeDlg();render();
+  },
+  delMember:(t,i,id)=>{
+    if(S.session&&(onCourt().includes(id)||gamesToday(id)>0))return err('ลบไม่ได้ตอนนี้ เพราะมีเกมวันนี้อยู่ ปิดวันเล่นก่อนแล้วค่อยลบ');
+    confirmDlg('ลบ '+esc(nm(id))+'?','คะแนนและสถิติของคนนี้จะหายไป','doDel','ลบสมาชิก',id);
+  },
+  doDel:(t,i,id)=>{
+    S.members=S.members.filter(m=>m.id!==id);
+    if(S.session)S.session.present=S.session.present.filter(x=>x!==id);
+    save();closeDlg();render();
+  },
+  saveSettings:()=>{
+    const st=S.settings;
+    st.clubName=$('#sName').value.trim()||'ก๊วนแบด';
+    st.shuttlePrice=Math.max(0,+$('#dShuttle').value||0);st.courtFee=Math.max(0,+$('#dCourt').value||0);st.courts=clamp(Math.round(+$('#dCourts').value||1),1,CONFIG.maxCourts);
+    if(S.session){const s=S.session;s.shuttlePrice=Math.max(0,+$('#tShuttle').value||0);s.courtFee=Math.max(0,+$('#tCourt').value||0);resizeCourts(clamp(Math.round(+$('#tCourts').value||1),1,CONFIG.maxCourts))}
+    save();closeDlg();render();toast('บันทึกการตั้งค่าแล้ว');
+  },
+  exportData:()=>{
+    if(AI){const txt=JSON.stringify(S);
+      openDlg(`<h2>สำรองข้อมูล</h2><p class="sub">คัดลอกข้อความทั้งหมดนี้ไปเก็บไว้ เช่น ส่งเข้าไลน์ของตัวเอง</p><textarea readonly id="bk">${esc(txt)}</textarea><div class="dlg-act"><button class="btn ghost" data-act="close">ปิด</button><button class="btn primary" data-act="copyBk">คัดลอก</button></div>`);return}
+    const d=new Date().toISOString().slice(0,10);
+    const blob=new Blob([JSON.stringify(S)],{type:'application/json'});
+    const file=new File([blob],'badminton-backup-'+d+'.json',{type:'application/json'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:'สำรองข้อมูลก๊วนแบด'}).catch(()=>{});return}
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file.name;document.body.appendChild(a);a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast('บันทึกไฟล์สำรองแล้ว');
+  },
+  copyBk:async()=>{const el=$('#bk');try{await navigator.clipboard.writeText(el.value);toast('คัดลอกแล้ว')}catch(e){el.focus();el.select();try{document.execCommand('copy');toast('คัดลอกแล้ว')}catch(e2){toast('กดค้างที่ข้อความเพื่อคัดลอก')}}},
+  pasteImport:()=>{const d=parseState($('#bkIn').value.trim());if(!d||!d.settings)return err('ข้อความนี้ไม่ใช่ข้อมูลสำรองของแอปนี้');pendingImport=d;confirmDlg('กู้คืนข้อมูล?','สมาชิก '+d.members.length+' คน ข้อมูลในเครื่องตอนนี้จะถูกแทนที่','doImport','กู้คืนข้อมูล')},
+  importData:()=>{
+    if(AI){openDlg(`<h2>กู้คืนข้อมูล</h2><p class="sub">วางข้อความสำรองที่เคยคัดลอกไว้</p><textarea id="bkIn"></textarea><p class="err" id="err"></p><div class="dlg-act"><button class="btn ghost" data-act="close">ยกเลิก</button><button class="btn primary" data-act="pasteImport">กู้คืน</button></div>`);return}
+    const inp=document.createElement('input');inp.type='file';inp.accept='application/json,.json';
+    inp.onchange=()=>{const f=inp.files[0];if(!f)return;const r=new FileReader();
+      r.onload=()=>{try{const d=JSON.parse(r.result);if(!d||!Array.isArray(d.members)||!d.settings)throw 0;
+        pendingImport=d;confirmDlg('กู้คืนข้อมูลจากไฟล์?','สมาชิก '+d.members.length+' คน ข้อมูลในเครื่องตอนนี้จะถูกแทนที่','doImport','กู้คืนข้อมูล')}
+        catch(e){toast('ไฟล์นี้ไม่ใช่ไฟล์สำรองของแอปนี้')}};
+      r.readAsText(f)};
+    inp.click();
+  },
+  doImport:()=>{if(!pendingImport)return;S=pendingImport;if(!Array.isArray(S.history))S.history=[];pendingImport=null;save();closeDlg();render();toast('กู้คืนข้อมูลแล้ว')},
+  paid:(t,i,id)=>{const p=S.session.paid;if(p[id])delete p[id];else p[id]=true;save();render();if(dlg.open&&t.closest('dialog'))closeDlg()},
+  copyBill:async()=>{
+    const txt=billText();
+    try{await navigator.clipboard.writeText(txt);toast('คัดลอกแล้ว วางในไลน์ได้เลย')}
+    catch(e){openDlg(`<h2>สรุปค่าใช้จ่าย</h2><p class="sub">กดค้างเพื่อคัดลอกข้อความนี้</p><textarea readonly>${esc(txt)}</textarea><div class="dlg-act"><button class="btn primary" data-act="close">ปิด</button></div>`)}
+  },
+  closeSession:()=>{
+    if(onCourt().length)return toast('ยังมีเกมค้างในสนาม กดจบเกมหรือยกเลิกก่อน');
+    confirmDlg('ปิดวันเล่นนี้?','ระบบจะเก็บสรุปไว้ในประวัติ และเริ่มวันใหม่ได้ครั้งหน้า คะแนนอันดับยังอยู่ครบ','doClose','ปิดวันเล่น');
+  },
+  doClose:()=>{
+    const s=S.session,rows=billRows();
+    S.history.unshift({id:s.id,date:s.date,players:s.present.length,matches:s.matches.length,
+      shuttles:s.matches.reduce((t,m)=>t+m.shuttles,0),total:rows.reduce((t,r)=>t+r.total,0),collected:rows.filter(r=>r.paid).reduce((t,r)=>t+r.total,0)});
+    S.history=S.history.slice(0,CONFIG.historyLimit);S.session=null;save();closeDlg();render();toast('ปิดวันเล่นแล้ว');
+  }
+};
+document.addEventListener('click',e=>{
+  const tb=e.target.closest('nav.tabs button');
+  if(tb){tab=tb.dataset.tab;render();window.scrollTo(0,0);return}
+  const t=e.target.closest('[data-act]');if(!t)return;
+  const f=ACT[t.dataset.act];if(!f)return;
+  f(t,t.dataset.i!=null?+t.dataset.i:null,t.dataset.id);
+});
+document.addEventListener('change',e=>{
+  if(!e.target.classList.contains('ci')||!S.session)return;
+  const id=e.target.value,p=S.session.present;
+  if(e.target.checked){if(!p.includes(id))p.push(id)}else{S.session.present=p.filter(x=>x!==id);delete S.session.rest[id]}
+  save();render();
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&dlg.open&&e.target.tagName==='INPUT'){
+    const b=dlg.querySelector('.btn.primary[data-act]:not([data-act="close"])');if(b){e.preventDefault();b.click()}
+  }
+});
+let tt=null;
+function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('show'),2600)}
+
+loadLocal();render();connectDb();
+if('serviceWorker' in navigator&&location.protocol.startsWith('http')){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
+try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
+})();
+</script>
+</body>
+</html>
