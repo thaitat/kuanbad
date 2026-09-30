@@ -26,12 +26,6 @@
 <title>ก๊วนแบด</title>
 <meta name="theme-color" content="#1C7A59">
 <meta name="description" content="จัดคู่ จัดอันดับ และคิดค่าลูกแบดของก๊วน">
-<meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icons/icon-192.png" type="image/png">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
-<meta name="theme-color" content="#1C7A59">
-<meta name="description" content="จัดคู่ จัดอันดับ และคิดค่าลูกแบดของก๊วน">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Bai+Jamjuree:wght@500;600;700&display=swap" rel="stylesheet">
@@ -242,6 +236,10 @@ dialog::backdrop{background:rgba(8,16,12,.55)}
   background:var(--bg);font-family:"Bai Jamjuree",sans-serif;font-weight:700}
 .score .dash{padding-bottom:14px;font-size:1.4rem;color:var(--muted)}
 .err{color:var(--loss);font-size:.9rem;min-height:1.2em;margin:8px 0 0}
+.errbox{color:var(--loss);font-size:.95rem}
+.bkinfo.old{color:var(--loss)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.92rem;margin:8px 0}
+.kv span:nth-child(odd){color:var(--muted)}
 .cilist{list-style:none;padding:0;margin:0 0 12px;max-height:48vh;overflow:auto;border:1px solid var(--line);border-radius:10px}
 .cilist label{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer}
 .cilist input{width:20px;height:20px;accent-color:var(--court)}
@@ -419,6 +417,49 @@ const sign=n=>n>0?'+'+n:String(n);
 let ref=null,writing=false,dirty=false,timer=null;
 const AI=window.AppInventor||null; /* present when running inside the Kodular app */
 function parseState(t){try{const d=JSON.parse(t);return d&&Array.isArray(d.members)?d:null}catch(e){return null}}
+
+/* ---------- สำรอง/กู้คืน: รูปแบบมาตรฐานเดียวกับทุกแอป ----------
+   ไฟล์: kuanbad_backup_ปี-เดือน-วัน_ชั่วโมงนาที.json
+   ในไฟล์มี app (รหัสแอป) schema (เวอร์ชันรูปแบบข้อมูล) created (เวลาสำรอง) summary และ data */
+const BK={app:'kuanbad',name:'ก๊วนแบด',schema:2,last:'kuanbad_lastbackup',undo:'kuanbad_undo'};
+let pendingBackup=null,pendingUndo=false;
+const pad2=n=>String(n).padStart(2,'0');
+function isoLocal(d){const o=-d.getTimezoneOffset(),sg=o>=0?'+':'-';
+  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}${sg}${pad2(Math.floor(Math.abs(o)/60))}:${pad2(Math.abs(o)%60)}`}
+const fmtStamp=iso=>{const d=new Date(iso);return isNaN(d)?String(iso||'-'):d.toLocaleString('th-TH',{day:'numeric',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'})+' น.'};
+const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+function summaryOf(d){return `${d.settings&&d.settings.clubName||BK.name}: สมาชิก ${d.members.length} คน ประวัติ ${(d.history||[]).length} วันเล่น${d.session?' มีวันเล่นที่เปิดอยู่':''}`}
+function makeBackup(){
+  const iso=isoLocal(new Date());
+  const file=`${BK.app}_backup_${iso.slice(0,10)}_${iso.slice(11,13)}${iso.slice(14,16)}.json`;
+  const body={app:BK.app,appName:BK.name,schema:BK.schema,created:iso,summary:summaryOf(S),data:S};
+  return{file,iso,body,text:JSON.stringify(body)};
+}
+function markBackup(iso){lsSet(BK.last,iso)}
+function bkOld(){const l=lsGet(BK.last);return !l||(Date.now()-new Date(l))/864e5>7}
+function bkText(){const l=lsGet(BK.last);if(!l)return 'ยังไม่เคยสำรองข้อมูลในเครื่องนี้';
+  const days=Math.floor((Date.now()-new Date(l))/864e5);return 'สำรองล่าสุด '+fmtStamp(l)+(days>7?` (${days} วันแล้ว ควรสำรองใหม่)`:'')}
+/* ตรวจไฟล์ก่อนกู้คืน: คืนค่า {data,created,legacy} หรือ {error} */
+function checkBackup(text,fname){
+  let o;try{o=JSON.parse(text)}catch(e){return{error:(fname?`ไฟล์ "${fname}" `:'ข้อความนี้')+'ไม่ใช่ข้อมูลสำรอง'}}
+  if(!o||typeof o!=='object')return{error:'ไม่ใช่ข้อมูลสำรอง'};
+  if(!o.app){ /* ไฟล์สำรองรูปแบบเดิม (badminton-backup-วันที่.json) ยังกู้คืนได้ */
+    if(Array.isArray(o.members)&&o.settings)return{data:o,created:null,legacy:true};
+    return{error:'ไฟล์นี้ไม่มีรหัสแอป จึงไม่ใช่ข้อมูลสำรองจากแอปของเรา'}}
+  if(o.app!==BK.app)return{error:`ไฟล์นี้เป็นข้อมูลสำรองของแอป "${o.appName||o.app}" ไม่ใช่ ${BK.name} ให้นำไปกู้คืนในแอปนั้นแทน`};
+  if(typeof o.schema!=='number')return{error:'ไฟล์สำรองไม่มีเลขเวอร์ชันรูปแบบข้อมูล'};
+  if(o.schema>BK.schema)return{error:'ไฟล์นี้สร้างจากแอปเวอร์ชันใหม่กว่า กรุณาอัปเดตแอปก่อน'};
+  const d=o.data;
+  if(!d||!Array.isArray(d.members)||!d.settings)return{error:'ไฟล์สำรองเสียหาย ไม่พบรายชื่อสมาชิก'};
+  return{data:d,created:o.created,legacy:false};
+}
+function askImport(c){
+  pendingImport=c.data;
+  confirmDlg('กู้คืนข้อมูล?',
+    (c.legacy?'ไฟล์สำรองรูปแบบเดิม (ไม่มีวันเวลาในไฟล์)':'สำรองเมื่อ '+fmtStamp(c.created))+'<br>'+esc(summaryOf(c.data))+
+    `<br><br>ข้อมูลในเครื่องตอนนี้ (สมาชิก ${S.members.length} คน) จะถูกแทนที่ แต่แอปจะเก็บสำเนาไว้ให้ย้อนกลับได้`,'doImport','กู้คืนข้อมูล');
+}
 function loadLocal(){
   let a=null,b=null;
   try{a=parseState(localStorage.getItem(LS_KEY))}catch(e){}
@@ -865,8 +906,9 @@ function openSettings(){
     <label class="field"><span>ค่าคอร์ทรวม</span><input id="dCourt" type="number" min="0" value="${st.courtFee}"></label>
     <label class="field"><span>จำนวนสนาม</span><input id="dCourts" type="number" min="1" max="${CONFIG.maxCourts}" value="${st.courts}"></label></div>
   <h3 style="margin:14px 0 8px">สำรองข้อมูล</h3>
-  <p class="sub" style="margin:0 0 8px">ข้อมูลเก็บอยู่ในเครื่องนี้ ควรสำรองเก็บไว้เป็นระยะ หรือใช้ย้ายไปเครื่องใหม่</p>
-  <div class="row" style="justify-content:flex-start"><button class="btn ghost" data-act="exportData">สำรองเป็นไฟล์</button><button class="btn ghost" data-act="importData">กู้คืนจากไฟล์</button></div>
+  <p class="sub" style="margin:0 0 8px">ข้อมูลเก็บอยู่ในเครื่องนี้ ควรสำรองเก็บไว้นอกเครื่อง เช่น Google Drive หรือไลน์ของตัวเอง</p>
+  <p class="sub bkinfo${bkOld()?' old':''}" style="margin:0 0 8px">${bkText()}</p>
+  <div class="row" style="justify-content:flex-start"><button class="btn ghost" data-act="exportData">สำรองเป็นไฟล์</button><button class="btn ghost" data-act="importData">กู้คืนจากไฟล์</button>${lsGet(BK.undo)?'<button class="btn ghost" data-act="undoImport">ย้อนการกู้คืนล่าสุด</button>':''}</div>
   <div class="dlg-act" style="justify-content:space-between"><div class="row"><button class="btn ghost" data-act="demo">ใส่ข้อมูลตัวอย่าง</button><button class="btn danger" data-act="wipe">ลบข้อมูลทั้งหมด</button></div>
   <div class="row"><button class="btn ghost" data-act="close">ยกเลิก</button><button class="btn primary" data-act="saveSettings">บันทึก</button></div></div>`);
 }
@@ -995,28 +1037,45 @@ const ACT={
     save();closeDlg();render();toast('บันทึกการตั้งค่าแล้ว');
   },
   exportData:()=>{
-    if(AI){const txt=JSON.stringify(S);
-      openDlg(`<h2>สำรองข้อมูล</h2><p class="sub">คัดลอกข้อความทั้งหมดนี้ไปเก็บไว้ เช่น ส่งเข้าไลน์ของตัวเอง</p><textarea readonly id="bk">${esc(txt)}</textarea><div class="dlg-act"><button class="btn ghost" data-act="close">ปิด</button><button class="btn primary" data-act="copyBk">คัดลอก</button></div>`);return}
-    const d=new Date().toISOString().slice(0,10);
-    const blob=new Blob([JSON.stringify(S)],{type:'application/json'});
-    const file=new File([blob],'badminton-backup-'+d+'.json',{type:'application/json'});
-    if(navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:'สำรองข้อมูลก๊วนแบด'}).catch(()=>{});return}
-    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file.name;document.body.appendChild(a);a.click();
-    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast('บันทึกไฟล์สำรองแล้ว');
+    const b=makeBackup();
+    if(AI){
+      openDlg(`<h2>สำรองข้อมูล</h2><p class="sub">${esc(b.body.summary)}<br>คัดลอกข้อความทั้งหมดนี้ไปเก็บไว้ เช่น ส่งเข้าไลน์ของตัวเอง ตั้งชื่อว่า ${esc(b.file)}</p><textarea readonly id="bk">${esc(b.text)}</textarea><div class="dlg-act"><button class="btn ghost" data-act="close">ปิด</button><button class="btn primary" data-act="copyBk">คัดลอก</button></div>`);
+      markBackup(b.iso);return}
+    const blob=new Blob([b.text],{type:'application/json'});
+    const file=new File([blob],b.file,{type:'application/json'});
+    const canShare=!!(navigator.canShare&&navigator.canShare({files:[file]}));
+    pendingBackup={b,blob,file};
+    openDlg(`<h2>สำรองข้อมูล</h2>
+      <div class="kv"><span>ไฟล์</span><b style="overflow-wrap:anywhere">${esc(b.file)}</b><span>ข้อมูล</span><span>${esc(b.body.summary)}</span><span>เวลา</span><span>${fmtStamp(b.iso)}</span></div>
+      <p class="sub">แนะนำให้เก็บสำเนาไว้นอกมือถือ เช่น Google Drive เพื่อไม่ให้หายเมื่อข้อมูลเบราว์เซอร์ถูกล้าง</p>
+      <div class="dlg-act"><button class="btn ghost" data-act="close">ยกเลิก</button><button class="btn ghost" data-act="bkSave">บันทึกลงเครื่อง</button>${canShare?'<button class="btn primary" data-act="bkShare">แชร์ (Drive, ไลน์)</button>':''}</div>`);
   },
+  bkSave:()=>{const p=pendingBackup;if(!p)return;const a=document.createElement('a');a.href=URL.createObjectURL(p.blob);a.download=p.file.name;document.body.appendChild(a);a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);markBackup(p.b.iso);closeDlg();toast('บันทึก '+p.file.name+' แล้ว')},
+  bkShare:async()=>{const p=pendingBackup;if(!p)return;
+    try{await navigator.share({files:[p.file],title:p.file.name});markBackup(p.b.iso);closeDlg();toast('ส่งไฟล์สำรองแล้ว')}
+    catch(e){if(e&&e.name!=='AbortError')toast('แชร์ไม่สำเร็จ ลองกดบันทึกลงเครื่องแทน')}},
   copyBk:async()=>{const el=$('#bk');try{await navigator.clipboard.writeText(el.value);toast('คัดลอกแล้ว')}catch(e){el.focus();el.select();try{document.execCommand('copy');toast('คัดลอกแล้ว')}catch(e2){toast('กดค้างที่ข้อความเพื่อคัดลอก')}}},
-  pasteImport:()=>{const d=parseState($('#bkIn').value.trim());if(!d||!d.settings)return err('ข้อความนี้ไม่ใช่ข้อมูลสำรองของแอปนี้');pendingImport=d;confirmDlg('กู้คืนข้อมูล?','สมาชิก '+d.members.length+' คน ข้อมูลในเครื่องตอนนี้จะถูกแทนที่','doImport','กู้คืนข้อมูล')},
+  pasteImport:()=>{const r=checkBackup($('#bkIn').value.trim());if(r.error)return err(r.error);askImport(r)},
   importData:()=>{
     if(AI){openDlg(`<h2>กู้คืนข้อมูล</h2><p class="sub">วางข้อความสำรองที่เคยคัดลอกไว้</p><textarea id="bkIn"></textarea><p class="err" id="err"></p><div class="dlg-act"><button class="btn ghost" data-act="close">ยกเลิก</button><button class="btn primary" data-act="pasteImport">กู้คืน</button></div>`);return}
     const inp=document.createElement('input');inp.type='file';inp.accept='application/json,.json';
     inp.onchange=()=>{const f=inp.files[0];if(!f)return;const r=new FileReader();
-      r.onload=()=>{try{const d=JSON.parse(r.result);if(!d||!Array.isArray(d.members)||!d.settings)throw 0;
-        pendingImport=d;confirmDlg('กู้คืนข้อมูลจากไฟล์?','สมาชิก '+d.members.length+' คน ข้อมูลในเครื่องตอนนี้จะถูกแทนที่','doImport','กู้คืนข้อมูล')}
-        catch(e){toast('ไฟล์นี้ไม่ใช่ไฟล์สำรองของแอปนี้')}};
+      r.onload=()=>{const c=checkBackup(r.result,f.name);
+        if(c.error){openDlg(`<h2>กู้คืนไม่ได้</h2><p class="errbox">${esc(c.error)}</p><div class="dlg-act"><button class="btn primary" data-act="close">ปิด</button></div>`);return}
+        askImport(c)};
+      r.onerror=()=>toast('อ่านไฟล์ไม่ได้');
       r.readAsText(f)};
     inp.click();
   },
-  doImport:()=>{if(!pendingImport)return;S=pendingImport;if(!Array.isArray(S.history))S.history=[];pendingImport=null;save();closeDlg();render();toast('กู้คืนข้อมูลแล้ว')},
+  doImport:()=>{if(!pendingImport)return;
+    lsSet(BK.undo,JSON.stringify({created:isoLocal(new Date()),data:S}));
+    S=pendingImport;if(!Array.isArray(S.history))S.history=[];pendingImport=null;save();closeDlg();render();toast('กู้คืนข้อมูลแล้ว ถ้าเลือกไฟล์ผิด กดย้อนได้ในหน้าตั้งค่า')},
+  undoImport:()=>{let u=null;try{u=JSON.parse(lsGet(BK.undo))}catch(e){}
+    if(!u||!u.data)return;pendingImport=u.data;pendingUndo=true;
+    confirmDlg('ย้อนการกู้คืน?','กลับไปใช้ข้อมูลก่อนกู้คืนครั้งล่าสุด (เก็บไว้เมื่อ '+fmtStamp(u.created)+') สมาชิก '+u.data.members.length+' คน','doUndo','ย้อนกลับ')},
+  doUndo:()=>{if(!pendingImport)return;S=pendingImport;pendingImport=null;pendingUndo=false;try{localStorage.removeItem(BK.undo)}catch(e){}
+    save();closeDlg();render();toast('ย้อนกลับแล้ว')},
   paid:(t,i,id)=>{const p=S.session.paid;if(p[id])delete p[id];else p[id]=true;save();render();if(dlg.open&&t.closest('dialog'))closeDlg()},
   copyBill:async()=>{
     const txt=billText();
