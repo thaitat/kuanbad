@@ -50,12 +50,14 @@
    --cork      สีส่วนนับลูกแบด และป้ายระดับสูงสุด
    --cork-soft สีพื้นแถบนับลูก
    --loss      สีแดง (แพ้ / ลบ / คะแนนลด)
+   --gold      สีเหลืองทองของชื่อมือ 1 และมงกุฎ
+   --gold-court สีเหลืองของชื่อมือ 1 บนพื้นสนามสีเขียว
    ชุดแรกคือโหมดสว่าง ชุดถัดไปคือโหมดมืด (มือถือตั้งเป็นธีมมืด)
    ===================================================================== */
 :root{
   --bg:#EEF3EF;--surface:#FFFFFF;--ink:#13241C;--muted:#5A6B62;--line:#D5DED8;
   --court:#1C7A59;--court-2:#15654A;--on-court:#FFFFFF;
-  --cork:#B97A12;--cork-soft:#F7EACD;--loss:#B3433A;--focus:#2F6FED;
+  --cork:#B97A12;--cork-soft:#F7EACD;--loss:#B3433A;--focus:#2F6FED;--gold:#C99A00;--gold-court:#FFE066;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
@@ -64,13 +66,13 @@
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
     --bg:#0E1713;--surface:#16221C;--ink:#E4EDE8;--muted:#92A49A;--line:#2A3B33;
-    --court:#1D6B50;--court-2:#175841;--cork:#E0AA48;--cork-soft:#3A2F17;--loss:#E06A5F;--focus:#7AA2FF;
+    --court:#1D6B50;--court-2:#175841;--cork:#E0AA48;--cork-soft:#3A2F17;--loss:#E06A5F;--focus:#7AA2FF;--gold:#FFD34D;--gold-court:#FFE066;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
   --bg:#0E1713;--surface:#16221C;--ink:#E4EDE8;--muted:#92A49A;--line:#2A3B33;
-  --court:#1D6B50;--court-2:#175841;--cork:#E0AA48;--cork-soft:#3A2F17;--loss:#E06A5F;--focus:#7AA2FF;
+  --court:#1D6B50;--court-2:#175841;--cork:#E0AA48;--cork-soft:#3A2F17;--loss:#E06A5F;--focus:#7AA2FF;--gold:#FFD34D;--gold-court:#FFE066;
   color-scheme:dark;
 }
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
@@ -126,7 +128,7 @@ section>h2{margin-bottom:10px}
   max-width:14ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pl small{opacity:.85;font-size:.78rem}
 .odds{position:relative;z-index:1;font-size:.78rem;opacity:.9;margin-top:2px}
-.court.empty{background:transparent;border:2px dashed var(--line);display:grid;place-items:center;grid-template-columns:1fr}
+.court.empty{background:transparent;border:2px dashed var(--line);color:var(--ink);display:grid;place-items:center;grid-template-columns:1fr}
 .court.empty::before,.court.empty::after{display:none}
 .cc-ctrl{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .shut{flex:1 1 100%;display:flex;align-items:center;justify-content:space-between;
@@ -138,6 +140,24 @@ section>h2{margin-bottom:10px}
 .shut .cnt b{font-size:1.5rem}
 .cc-ctrl .btn.primary{flex:1}
 @media (min-width:560px){.shut{flex:1 1 auto}}
+
+/* สนามเดี่ยว: ผู้เล่นฝั่งละ 1 คน อยู่กลางแดน */
+.court.singles .half{grid-template-rows:1fr}
+.court.singles .half::after{display:none}
+.kind{font-size:.72rem;font-weight:600;border-radius:5px;padding:1px 7px;margin-left:6px;vertical-align:2px;
+  background:var(--cork-soft);color:var(--ink)}
+.kind.doubles{background:transparent;border:1px solid var(--line);color:var(--muted)}
+.court.empty .row{padding:8px}
+/* ปุ่มสลับ คู่ / เดี่ยว ในแท็บอันดับ */
+.seg{display:inline-grid;grid-template-columns:1fr 1fr;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px;margin-bottom:6px}
+.seg button{border:0;background:none;padding:7px 22px;border-radius:8px;cursor:pointer;font-family:"Bai Jamjuree",sans-serif;font-weight:600;color:var(--muted)}
+.seg button[aria-selected="true"]{background:var(--court);color:var(--on-court)}
+
+/* มือ 1 ของแต่ละประเภท: ชื่อสีเหลือง + มงกุฎ */
+.champ{color:var(--gold);font-weight:700;display:inline-flex;align-items:center;gap:4px;min-width:0}
+.court .champ{color:var(--gold-court)}
+.crown{flex:none;width:1.05em;height:1.05em}
+.lk{color:var(--court);font-weight:600}
 
 /* ---------- คิวรอลงสนาม ---------- */
 .queue{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:8px}
@@ -317,6 +337,14 @@ const CONFIG={
   randomRange:25,          // ความสุ่ม: ตัวเลือกที่ห่างจากแบบที่สูสีที่สุดไม่เกินค่านี้
                            //   จะถูกสุ่มเลือกได้ 0 = เลือกแบบสูสีที่สุดเสมอ
 
+  /* ----- แบดเดี่ยว ----- */
+  separateSinglesRating:true, // true = แยกคะแนนและอันดับ "เดี่ยว" กับ "คู่" ออกจากกัน (แนะนำ)
+                              //   false = ใช้คะแนนเดียวกันทั้งเดี่ยวและคู่
+                              // เกมเดี่ยวไม่ใช้คิว ผู้จัดเลือก 2 คนเองจากคนที่ว่าง
+
+  /* ----- มือ 1 ----- */
+  champMinGames:1,         // ต้องเล่นประเภทนั้นอย่างน้อยกี่เกม ถึงได้มงกุฎมือ 1
+
   /* ----- ขอพัก ----- */
   restRounds:[1,2],        // ตัวเลือก "ขอพัก" ข้ามคิวกี่รอบการจัดคู่ (เพิ่มได้ เช่น [1,2,3])
                            //   นอกจากนี้จะมีตัวเลือก "พักจนกว่าจะบอกพร้อม" ให้เสมอ
@@ -340,6 +368,7 @@ const SHUTTLE='<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true
 function defaultState(){return{v:1,rev:0,settings:{clubName:CONFIG.clubName,shuttlePrice:CONFIG.shuttlePrice,courtFee:CONFIG.courtFee,courts:CONFIG.courts},members:[],session:null,history:[]}}
 let S=defaultState();
 let tab='court';
+let rankType='doubles';   // แท็บอันดับกำลังดู 'doubles' หรือ 'singles'
 let pendingImport=null;
 
 /* =====================================================================
@@ -351,11 +380,28 @@ const M=id=>S.members.find(m=>m.id===id);
 const nm=id=>{const m=M(id);return m?m.name:'(ลบแล้ว)'};
 const tierIdx=r=>{const i=CONFIG.tiers.findIndex(t=>r>=t.min);return i<0?CONFIG.tiers.length-1:i};  // ลำดับป้ายระดับ
 const tier=r=>CONFIG.tiers[tierIdx(r)].name;                                                          // ชื่อป้ายระดับ
+/* มือ 1: คะแนนสูงสุดของประเภทนั้น (ต้องเล่นครบ champMinGames) */
+const CROWN='<svg class="crown" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 8.5 7 12l5-7 5 7 4.5-3.5-1.8 9.5H4.3z" fill="currentColor"/><rect x="4.3" y="19.2" width="15.4" height="2.2" rx="1.1" fill="currentColor"/></svg>';
+function champId(type){
+  const f=F(type);let best=null;
+  S.members.forEach(m=>{ensureMember(m);if(m[f.g]>=CONFIG.champMinGames&&(!best||m[f.r]>best[f.r]))best=m});
+  return best?best.id:null;
+}
+const isChamp=(id,type)=>champId(type)===id;
+/* ชื่อสำหรับแสดงผล: ถ้าเป็นมือ 1 ของประเภทนั้น ใส่สีเหลืองและมงกุฎ */
+const nameHtml=(id,type)=>isChamp(id,type)?`<span class="champ" title="มือ 1 ประเภท${typeName(type)}">${CROWN}<span>${esc(nm(id))}</span></span>`:esc(nm(id));
 const tierBadge=r=>`<i class="tier t${tierIdx(r)}">${esc(tier(r))}</i>`;                             // ป้ายระดับพร้อมสี
-const avg=ids=>ids.reduce((t,id)=>t+(M(id)?M(id).rating:1000),0)/ids.length;
+/* ประเภทเกม: 'doubles' = คู่, 'singles' = เดี่ยว
+   F(type) บอกว่าคะแนน/สถิติของประเภทนั้นเก็บในช่องไหนของสมาชิก */
+const F=type=>(type==='singles'&&CONFIG.separateSinglesRating)?{r:'sRating',g:'sGames',w:'sWins',l:'sLosses'}:{r:'rating',g:'games',w:'wins',l:'losses'};
+const typeOf=x=>(x&&x.type)||'doubles';
+const typeName=t=>t==='singles'?'เดี่ยว':'คู่';
+function ensureMember(m){if(m.sRating==null){m.sRating=m.rating;m.sGames=0;m.sWins=0;m.sLosses=0}}  // สมาชิกจากเวอร์ชันก่อน: เริ่มคะแนนเดี่ยวเท่าคะแนนคู่
+const rOf=(id,type)=>{const m=M(id);if(!m)return 1000;ensureMember(m);return m[F(type).r]};
+const avg=(ids,type='doubles')=>ids.reduce((t,id)=>t+rOf(id,type),0)/ids.length;
 // โอกาสชนะที่คาดไว้ของทีมคะแนน ra เมื่อเจอทีมคะแนน rb (0 ถึง 1)
 const expect=(ra,rb)=>1/(1+Math.pow(10,(rb-ra)/400));
-const kOf=m=>m.games<CONFIG.eloNewGames?CONFIG.eloKNew:CONFIG.eloKNormal;  // ค่า K ของผู้เล่นคนนี้
+const kOf=(m,type='doubles')=>m[F(type).g]<CONFIG.eloNewGames?CONFIG.eloKNew:CONFIG.eloKNormal;  // ค่า K ของผู้เล่นคนนี้
 const baht=n=>'฿'+Math.round(n).toLocaleString('th-TH');
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const fmtDate=iso=>new Date(iso).toLocaleDateString('th-TH',{weekday:'short',day:'numeric',month:'short',year:'2-digit'});
@@ -428,7 +474,7 @@ async function connectDb(){
 function onCourt(){const s=S.session;return s?s.courts.filter(Boolean).flatMap(c=>c.a.concat(c.b)):[]}
 function gamesToday(id){return S.session.matches.filter(m=>m.a.includes(id)||m.b.includes(id)).length}
 /* เติมช่องข้อมูลใหม่ให้วันเล่นที่สร้างจากเวอร์ชันก่อน */
-function ensureSession(){const s=S.session;if(!s)return;s.rest=s.rest||{};s.left=s.left||{};s.frozen=s.frozen||{};s.starts=s.starts||0}
+function ensureSession(){const s=S.session;if(!s)return;s.locks=s.locks||[];s.rest=s.rest||{};s.left=s.left||{};s.frozen=s.frozen||{};s.starts=s.starts||0}
 const hasLeft=id=>!!S.session.left[id];                       // Check out ไปแล้วหรือยัง
 function isResting(id){                                        // กำลังขอพักอยู่ไหม
   const r=S.session.rest[id];if(r==null)return false;
@@ -444,45 +490,78 @@ function queue(){
 }
 function partnered(x,y){return S.session.matches.filter(m=>(m.a.includes(x)&&m.a.includes(y))||(m.b.includes(x)&&m.b.includes(y))).length}
 function teamKey(a,b){return[a.slice().sort().join('+'),b.slice().sort().join('+')].sort().join('|')}
+/* ล็อคคู่ Partner: เก็บเป็นรายการคู่ [x,y] ใช้เฉพาะวันเล่นนี้ (ปิดวันเล่นแล้วหายเอง) */
+function lockOf(id){const l=S.session.locks.find(p=>p.includes(id));return l?(l[0]===id?l[1]:l[0]):null}
+function unlock(id){S.session.locks=S.session.locks.filter(p=>!p.includes(id))}
+/* ทุกคู่ที่ล็อคและอยู่ในเกมเดียวกัน ต้องอยู่ทีมเดียวกัน */
+function lockOk(o){
+  const all=o.a.concat(o.b);
+  return S.session.locks.every(([x,y])=>!(all.includes(x)&&all.includes(y))||(o.a.includes(x)&&o.a.includes(y))||(o.b.includes(x)&&o.b.includes(y)));
+}
+/* เลือก 4 คนถัดไปจากคิว: คู่ที่ล็อคไว้ลงพร้อมกันเสมอ
+   ถ้าคู่ของเขายังเล่นอยู่หรือพักอยู่ จะรอจนกว่าคู่จะว่าง */
+function pickGroup(){
+  const q=queue(),inQ=new Set(q),g=[];
+  for(const id of q){
+    if(g.includes(id))continue;
+    const p=lockOf(id);
+    const unit=p?(inQ.has(p)?[id,p]:null):[id];
+    if(!unit)continue;
+    if(g.length+unit.length<=4)g.push(...unit);
+    if(g.length===4)break;
+  }
+  return g;
+}
 function splitOptions(p){
   return[[[0,1],[2,3]],[[0,2],[1,3]],[[0,3],[1,2]]].map(([x,y])=>{
     const a=x.map(i=>p[i]),b=y.map(i=>p[i]);
     const diff=Math.abs(avg(a)-avg(b));
     const rep=partnered(a[0],a[1])+partnered(b[0],b[1]);
     return{a,b,diff,score:diff+CONFIG.repeatPartnerPenalty*rep};  // คะแนนยิ่งน้อยยิ่งดี
-  }).sort((u,v)=>u.score-v.score);
+  }).filter(lockOk).sort((u,v)=>u.score-v.score);
 }
 function fillCourt(i){
-  const q=queue();
-  if(q.length<4){const r=restingList().length;toast('ต้องมีคนรออย่างน้อย 4 คน ตอนนี้มี '+q.length+' คน'+(r?' (พักอยู่ '+r+' คน)':''));return}
-  const opts=splitOptions(q.slice(0,4));
+  const q=queue(),g=pickGroup();
+  if(g.length<4){const r=restingList().length;toast((q.length<4?'ต้องมีคนรออย่างน้อย 4 คน ตอนนี้มี '+q.length+' คน':'คนที่รอเป็นคู่ที่ล็อคไว้ ต้องรอคู่ของเขาว่างก่อน')+(r?' (พักอยู่ '+r+' คน)':''));return}
+  const opts=splitOptions(g);
   const near=opts.filter(o=>o.score<=opts[0].score+CONFIG.randomRange);  // ตัวเลือกที่สูสีพอกัน
   const pick=near[Math.floor(Math.random()*near.length)];
   S.session.courts[i]={a:pick.a,b:pick.b,shuttles:1,startedAt:Date.now()};
   S.session.starts++;   // นับรอบการจัดคู่ ใช้นับถอยหลังคนที่ขอพัก
   save();render();
 }
+/* จัดเดี่ยว: ไม่ใช้คิว ผู้จัดเลือกเอง 2 คนจากคนที่ว่าง
+   (เช็คอินแล้ว ยังไม่กลับ และไม่ได้อยู่ในสนาม คนที่ขอพักก็เลือกได้) */
+function faced(x,y){return S.session.matches.filter(m=>typeOf(m)==='singles'&&((m.a[0]===x&&m.b[0]===y)||(m.a[0]===y&&m.b[0]===x))).length}
+function freePlayers(){const busy=new Set(onCourt());return S.session.present.filter(id=>M(id)&&!hasLeft(id)&&!busy.has(id))}
+function startSingles(i,x,y){
+  const s=S.session;
+  delete s.rest[x];delete s.rest[y];   // ลงเล่นแล้ว ถือว่าหายพัก
+  s.courts[i]={type:'singles',a:[x],b:[y],shuttles:1,startedAt:Date.now()};
+  save();render();
+}
 function swapTeams(i){
   const c=S.session.courts[i];
   const opts=splitOptions(c.a.concat(c.b));
+  if(opts.length<2)return toast('มีคู่ที่ล็อคไว้ในเกมนี้ สลับทีมไม่ได้');
   const cur=teamKey(c.a,c.b);
   const idx=opts.findIndex(o=>teamKey(o.a,o.b)===cur);
   const nx=opts[(idx+1)%opts.length];
   c.a=nx.a;c.b=nx.b;save();render();
 }
 function recordMatch(i,sa,sb){
-  const s=S.session,c=s.courts[i];
-  const ea=expect(avg(c.a),avg(c.b)),aw=sa>sb?1:0,mg=1+Math.min(Math.abs(sa-sb),CONFIG.marginCap)/CONFIG.marginDivisor;  // ea=โอกาสชนะทีม A, aw=ทีม A ชนะไหม, mg=ตัวคูณส่วนต่างสกอร์
+  const s=S.session,c=s.courts[i],type=typeOf(c),f=F(type);
+  const ea=expect(avg(c.a,type),avg(c.b,type)),aw=sa>sb?1:0,mg=1+Math.min(Math.abs(sa-sb),CONFIG.marginCap)/CONFIG.marginDivisor;  // ea=โอกาสชนะทีม A, aw=ทีม A ชนะไหม, mg=ตัวคูณส่วนต่างสกอร์
   const deltas={};
-  c.a.forEach(id=>{const m=M(id);if(m)deltas[id]=Math.round(kOf(m)*mg*(aw-ea))});
-  c.b.forEach(id=>{const m=M(id);if(m)deltas[id]=Math.round(kOf(m)*mg*((1-aw)-(1-ea)))});
+  c.a.forEach(id=>{const m=M(id);if(m){ensureMember(m);deltas[id]=Math.round(kOf(m,type)*mg*(aw-ea))}});
+  c.b.forEach(id=>{const m=M(id);if(m){ensureMember(m);deltas[id]=Math.round(kOf(m,type)*mg*((1-aw)-(1-ea)))}});
   Object.keys(deltas).forEach(id=>{
-    const m=M(id);m.rating+=deltas[id];m.games++;
+    const m=M(id);m[f.r]+=deltas[id];m[f.g]++;
     const won=(c.a.includes(id)&&aw)||(c.b.includes(id)&&!aw);
-    if(won)m.wins++;else m.losses++;
+    if(won)m[f.w]++;else m[f.l]++;
   });
   const now=Date.now();
-  s.matches.push({id:uid(),court:i+1,a:c.a,b:c.b,sa,sb,shuttles:c.shuttles,deltas,at:now});
+  s.matches.push({id:uid(),type,court:i+1,a:c.a,b:c.b,sa,sb,shuttles:c.shuttles,deltas,at:now});
   c.a.concat(c.b).forEach(id=>s.lastDone[id]=now);
   s.courts[i]=null;
   save();render();
@@ -491,20 +570,21 @@ function recordMatch(i,sa,sb){
 }
 function undoMatch(mid){
   const s=S.session,k=s.matches.findIndex(m=>m.id===mid);if(k<0)return;
-  const m=s.matches[k],aw=m.sa>m.sb;
+  const m=s.matches[k],aw=m.sa>m.sb,f=F(typeOf(m));
   Object.keys(m.deltas).forEach(id=>{
-    const p=M(id);if(!p)return;
-    p.rating-=m.deltas[id];p.games=Math.max(0,p.games-1);
+    const p=M(id);if(!p)return;ensureMember(p);
+    p[f.r]-=m.deltas[id];p[f.g]=Math.max(0,p[f.g]-1);
     const won=(m.a.includes(id)&&aw)||(m.b.includes(id)&&!aw);
-    if(won)p.wins=Math.max(0,p.wins-1);else p.losses=Math.max(0,p.losses-1);
+    if(won)p[f.w]=Math.max(0,p[f.w]-1);else p[f.l]=Math.max(0,p[f.l]-1);
   });
   s.matches.splice(k,1);save();render();toast('ลบผลเกมแล้ว คะแนนย้อนกลับแล้ว');
 }
-function todayDelta(id){
+function todayDelta(id,type='doubles'){
   if(!S.session)return 0;
-  return S.session.matches.reduce((t,m)=>t+(m.deltas[id]||0),0);
+  const f=F(type).r;
+  return S.session.matches.filter(m=>F(typeOf(m)).r===f).reduce((t,m)=>t+(m.deltas[id]||0),0);
 }
-// ค่าลูกหารเฉพาะ 4 คนในเกมนั้น ค่าคอร์ทหารเท่ากันทุกคนที่เช็คอิน
+// ค่าลูกหารเฉพาะคนในเกมนั้น (คู่หาร 4, เดี่ยวหาร 2) ค่าคอร์ทหารเท่ากันทุกคนที่เช็คอิน
 /* ค่าคอร์ทรายคน: คนที่ Check out แล้วใช้ยอดที่ล็อกไว้ ที่เหลือหารเท่ากันกับคนที่อยู่ */
 function courtShares(){
   const s=S.session,fz=s.frozen,out={};
@@ -526,7 +606,7 @@ function billRows(){
   return s.present.map(id=>{
     const courtShare=cs[id]||0;
     let g=0,sh=0;
-    s.matches.forEach(m=>{if(m.a.includes(id)||m.b.includes(id)){g++;sh+=m.shuttles/4}});
+    s.matches.forEach(m=>{if(m.a.includes(id)||m.b.includes(id)){g++;sh+=m.shuttles/(m.a.length+m.b.length)}});
     const shuttleCost=sh*s.shuttlePrice;
     return{id,g,sh,shuttleCost,courtShare,total:(CONFIG.roundUp?Math.ceil:Math.round)(shuttleCost+courtShare),paid:!!s.paid[id],left:hasLeft(id)};
   });
@@ -544,21 +624,22 @@ function resizeCourts(n){
    แต่ละฟังก์ชันคืนค่าเป็นข้อความ HTML แล้ว render() นำไปแสดง
    ข้อความภาษาไทยที่เห็นบนจอ แก้ได้ตรงๆ ในส่วนนี้
    ===================================================================== */
-function playerHtml(id){const m=M(id);return`<div class="pl"><b>${esc(nm(id))}</b><small>${m?m.rating+' ระดับ '+esc(tier(m.rating)):''}</small></div>`}
+function playerHtml(id,type){const m=M(id);const r=rOf(id,type);return`<div class="pl"><b>${nameHtml(id,type)}</b><small>${m?r+' ระดับ '+esc(tier(r)):''}</small></div>`}
 function courtCard(c,i){
   if(!c)return`<article class="cc"><div class="cc-h"><h3>สนาม ${i+1}</h3><span class="sub">ว่าง</span></div>
-    <div class="court empty"><button class="btn primary" data-act="fill" data-i="${i}">จัดคู่ลงสนามนี้</button></div></article>`;
-  const ra=avg(c.a),rb=avg(c.b),pa=Math.round(expect(ra,rb)*100);
-  return`<article class="cc"><div class="cc-h"><h3>สนาม ${i+1}</h3><span class="sub">โอกาสชนะ ${pa}% ต่อ ${100-pa}%</span></div>
-  <div class="court" role="group" aria-label="สนาม ${i+1}">
-    <div class="half a">${c.a.map(playerHtml).join('')}</div>
-    <div class="half b">${c.b.map(playerHtml).join('')}</div>
+    <div class="court empty"><div class="row"><button class="btn primary" data-act="fill" data-i="${i}">จัดคู่ (4 คน)</button>
+    <button class="btn ghost" data-act="fillS" data-i="${i}">จัดเดี่ยว (2 คน)</button></div></div></article>`;
+  const type=typeOf(c),ra=avg(c.a,type),rb=avg(c.b,type),pa=Math.round(expect(ra,rb)*100);
+  return`<article class="cc"><div class="cc-h"><h3>สนาม ${i+1} <span class="kind ${type}">${typeName(type)}</span></h3><span class="sub">โอกาสชนะ ${pa}% ต่อ ${100-pa}%</span></div>
+  <div class="court ${type}" role="group" aria-label="สนาม ${i+1} ประเภท${typeName(type)}">
+    <div class="half a">${c.a.map(id=>playerHtml(id,type)).join('')}</div>
+    <div class="half b">${c.b.map(id=>playerHtml(id,type)).join('')}</div>
   </div>
   <div class="cc-ctrl">
     <div class="shut"><button data-act="shMinus" data-i="${i}" aria-label="ลดจำนวนลูก">−</button>
       <span class="cnt">${SHUTTLE}<b>${c.shuttles}</b> ลูก</span>
       <button data-act="shPlus" data-i="${i}" aria-label="เพิ่มจำนวนลูก">+</button></div>
-    <button class="btn ghost" data-act="swap" data-i="${i}">สลับทีม</button>
+    ${type==='singles'?'':`<button class="btn ghost" data-act="swap" data-i="${i}">สลับทีม</button>`}
     <button class="btn ghost" data-act="cancelCourt" data-i="${i}">ยกเลิก</button>
     <button class="btn primary" data-act="finish" data-i="${i}">จบเกม</button>
   </div></article>`;
@@ -576,38 +657,43 @@ function viewCourt(){
       <label class="field"><span>จำนวนสนาม</span><input id="fCourts" type="number" inputmode="numeric" min="1" max="${CONFIG.maxCourts}" value="${st.courts}"></label>
     </div>
     <button class="btn primary" data-act="start" style="width:100%">เริ่มวันเล่นและเช็คอิน</button></div>`;
-  const s=S.session,q=queue(),rs=restingList(),lf=s.present.filter(id=>M(id)&&hasLeft(id));
+  const s=S.session,q=queue(),nx=new Set(pickGroup()),rs=restingList(),lf=s.present.filter(id=>M(id)&&hasLeft(id));
   const log=s.matches.slice().reverse().map(m=>{
     const aw=m.sa>m.sb;
     return`<li><div class="m"><span class="${aw?'w':''}">${m.a.map(x=>esc(nm(x))).join(' / ')}</span><span class="sc">${m.sa}–${m.sb}</span><span class="${aw?'':'w'}">${m.b.map(x=>esc(nm(x))).join(' / ')}</span>
-      <div class="sub">สนาม ${m.court}, ใช้ ${m.shuttles} ลูก</div></div>
+      <div class="sub">สนาม ${m.court} ${typeName(typeOf(m))}, ใช้ ${m.shuttles} ลูก</div></div>
       <button class="linkbtn" data-act="undo" data-id="${m.id}">ลบผล</button></li>`}).join('');
   return`<div class="bar"><button class="btn ghost" data-act="checkin">อยู่ในก๊วน ${activeCount()} คน</button>
     <span class="sub">รอเล่น ${q.length} คน</span></div>
     ${s.courts.map(courtCard).join('')}
     <section><h2>คิวรอลงสนาม</h2>
-    ${q.length?`<ol class="queue">${q.map((id,k)=>`<li><button class="chip ${k<4?'next':''}" data-act="qPlayer" data-id="${id}"><span class="qn">${k+1}</span>${esc(nm(id))}<small>${gamesToday(id)} เกม</small></button></li>`).join('')}</ol>
-    <p class="note">คนที่เล่นน้อยและรอนานได้ลงก่อน 4 คนแรกคือชุดถัดไป แตะชื่อเพื่อขอพักหรือ Check out</p>`:`<p class="sub">${activeCount()?(rs.length?'ที่เหลือกำลังเล่นหรือพักอยู่':'ทุกคนกำลังเล่นอยู่'):'ยังไม่มีใครเช็คอิน กดปุ่มด้านบน'}</p>`}
+    ${q.length?`<ol class="queue">${q.map((id,k)=>`<li><button class="chip ${nx.has(id)?'next':''}" data-act="qPlayer" data-id="${id}"><span class="qn">${k+1}</span>${nameHtml(id,'doubles')}<small>${gamesToday(id)} เกม${lockOf(id)?`, <span class="lk">คู่ ${esc(nm(lockOf(id)))}</span>`:''}</small></button></li>`).join('')}</ol>
+    <p class="note">คนที่เล่นน้อยและรอนานได้ลงก่อน กรอบเขียวคือชุดถัดไป แตะชื่อเพื่อขอพัก ล็อคคู่ หรือ Check out</p>`:`<p class="sub">${activeCount()?(rs.length?'ที่เหลือกำลังเล่นหรือพักอยู่':'ทุกคนกำลังเล่นอยู่'):'ยังไม่มีใครเช็คอิน กดปุ่มด้านบน'}</p>`}
     </section>
     ${rs.length?`<section><h2>ขอพัก</h2><ol class="queue">${rs.map(id=>{const n=restLeft(id);
-      return`<li><button class="chip rest" data-act="qPlayer" data-id="${id}">${esc(nm(id))}<small>${n==null?'รอบอกพร้อม':'อีก '+n+' รอบ'}</small></button></li>`}).join('')}</ol></section>`:''}
+      return`<li><button class="chip rest" data-act="qPlayer" data-id="${id}">${nameHtml(id,'doubles')}<small>${n==null?'รอบอกพร้อม':'อีก '+n+' รอบ'}</small></button></li>`}).join('')}</ol></section>`:''}
     ${lf.length?`<section><h2>กลับแล้ว</h2><ol class="queue">${lf.map(id=>`<li><button class="chip gone" data-act="qPlayer" data-id="${id}">${esc(nm(id))}<small>${s.paid[id]?'จ่ายแล้ว':'ค้างจ่าย'}</small></button></li>`).join('')}</ol></section>`:''}
     <section><h2>ผลเกมวันนี้</h2>${log?`<ul class="log">${log}</ul>`:'<p class="sub">ยังไม่มีเกมที่จบ</p>'}</section>`;
 }
 function viewRank(){
   if(!S.members.length)return viewCourt();
-  const list=S.members.slice().sort((x,y)=>y.rating-x.rating);
-  return`<div class="bar"><h2>อันดับสมาชิก</h2><button class="btn ghost" data-act="addMember">เพิ่มสมาชิก</button></div>
+  const rt=CONFIG.separateSinglesRating?rankType:'doubles',f=F(rt);
+  S.members.forEach(ensureMember);
+  const list=S.members.slice().sort((x,y)=>y[f.r]-x[f.r]);
+  const seg=CONFIG.separateSinglesRating?`<div class="seg" role="tablist">
+    <button role="tab" data-act="rankType" data-id="doubles" aria-selected="${rt==='doubles'}">คู่</button>
+    <button role="tab" data-act="rankType" data-id="singles" aria-selected="${rt==='singles'}">เดี่ยว</button></div>`:'';
+  return`<div class="bar"><h2>อันดับสมาชิก</h2><button class="btn ghost" data-act="addMember">เพิ่มสมาชิก</button></div>${seg}
   <ol class="rank">${list.map((m,k)=>{
-    const d=todayDelta(m.id),pct=m.games?Math.round(m.wins/m.games*100):0;
+    const d=todayDelta(m.id,rt),g=m[f.g],w=m[f.w],l=m[f.l],r=m[f.r],pct=g?Math.round(w/g*100):0;
     return`<li><button class="rrow" data-act="member" data-id="${m.id}">
       <span class="rk">${k+1}</span>
-      <span class="rnm"><span>${esc(m.name)}</span>${tierBadge(m.rating)}</span>
-      <span class="rt">${m.rating}</span>
-      <span class="rec">ชนะ ${m.wins} แพ้ ${m.losses}${m.games?` (${pct}%)`:''}${m.games<CONFIG.eloNewGames?', ช่วงปรับคะแนน':''}</span>
+      <span class="rnm">${isChamp(m.id,rt)?nameHtml(m.id,rt):`<span>${esc(m.name)}</span>`}${tierBadge(r)}</span>
+      <span class="rt">${r}</span>
+      <span class="rec">${g?`ชนะ ${w} แพ้ ${l} (${pct}%)`:(rt==='singles'?'ยังไม่เคยเล่นเดี่ยว':'ยังไม่มีเกม')}${g&&g<CONFIG.eloNewGames?', ช่วงปรับคะแนน':''}</span>
       <span class="dl ${d>0?'up':d<0?'down':''}">${d?'วันนี้ '+sign(d):''}</span>
     </button></li>`}).join('')}</ol>
-  <p class="note">คะแนนคิดแบบ Elo: ชนะทีมที่เก่งกว่าได้คะแนนมาก ชนะทีมที่อ่อนกว่าได้คะแนนน้อย ชนะขาดได้มากกว่าชนะเฉียด ${CONFIG.eloNewGames} เกมแรกคะแนนขยับแรงกว่าปกติเพื่อให้เข้าที่เร็ว ${CONFIG.tiers.filter(t=>t.min>0).map(t=>'ระดับ '+esc(t.name)+' ตั้งแต่ '+t.min).join(', ')}</p>`;
+  <p class="note">${CONFIG.separateSinglesRating?'อันดับเดี่ยวและคู่คิดแยกกัน คะแนนเดี่ยวเริ่มต้นเท่ากับคะแนนคู่ แล้วค่อยปรับตามผลเกมเดี่ยว ':''}คะแนนคิดแบบ Elo: ชนะทีมที่เก่งกว่าได้คะแนนมาก ชนะทีมที่อ่อนกว่าได้คะแนนน้อย ชนะขาดได้มากกว่าชนะเฉียด ${CONFIG.eloNewGames} เกมแรกคะแนนขยับแรงกว่าปกติเพื่อให้เข้าที่เร็ว ${CONFIG.tiers.filter(t=>t.min>0).map(t=>'ระดับ '+esc(t.name)+' ตั้งแต่ '+t.min).join(', ')}</p>`;
 }
 function viewBill(){
   const hist=S.history.length?`<section><h2>วันเล่นที่ผ่านมา</h2><ul class="hist">${S.history.map(h=>`<li><div><b>${fmtDate(h.date)}</b><div class="sub">${h.players} คน ${h.matches} เกม ใช้ ${h.shuttles} ลูก</div></div><div class="num" style="text-align:right"><b>${baht(h.total)}</b><div class="sub">เก็บได้ ${baht(h.collected)}</div></div></li>`).join('')}</ul></section>`:'';
@@ -629,7 +715,7 @@ function viewBill(){
     <td><button class="paid" data-act="paid" data-id="${r.id}" aria-pressed="${r.paid}">${r.paid?'จ่ายแล้ว':'ค้างจ่าย'}</button></td></tr>`).join('')}
   </tbody></table></div>`:'<p class="sub">ยังไม่มีใครเช็คอิน</p>'}
   ${live}
-  <p class="note">ค่าลูกหารเฉพาะ 4 คนในเกมนั้น ค่าคอร์ทหารเท่ากันทุกคนที่เช็คอิน ${CONFIG.roundUp?'ยอดรวมปัดขึ้นเป็นบาท':'ยอดรวมปัดเป็นบาท'}</p>
+  <p class="note">ค่าลูกหารเฉพาะคนในเกมนั้น (คู่หาร 4 เดี่ยวหาร 2) ค่าคอร์ทหารเท่ากันทุกคนที่เช็คอิน ${CONFIG.roundUp?'ยอดรวมปัดขึ้นเป็นบาท':'ยอดรวมปัดเป็นบาท'}</p>
   <div class="row" style="justify-content:flex-start;margin-top:16px">
     <button class="btn ghost" data-act="copyBill">คัดลอกสรุปส่งไลน์</button>
     <button class="btn danger" data-act="closeSession">ปิดวันเล่น</button>
@@ -661,7 +747,7 @@ function openAddMember(){
   <p class="err" id="err"></p>
   <div class="dlg-act"><button class="btn ghost" data-act="close">ยกเลิก</button><button class="btn primary" data-act="saveMember">เพิ่มสมาชิก</button></div>`);
 }
-function newMember(name,rating){const m={id:uid(),name,rating,games:0,wins:0,losses:0};S.members.push(m);return m}
+function newMember(name,rating){const m={id:uid(),name,rating,games:0,wins:0,losses:0,sRating:rating,sGames:0,sWins:0,sLosses:0};S.members.push(m);return m}
 function openCheckin(){
   const s=S.session,busy=new Set(onCourt());
   const list=S.members.slice().sort((a,b)=>a.name.localeCompare(b.name,'th'));
@@ -673,6 +759,28 @@ function openCheckin(){
     ${esc(m.name)} ${tierBadge(m.rating)}<small>${gone?'กลับแล้ว':locked?(busy.has(m.id)?'อยู่ในสนาม':'เล่นไปแล้ว'):''}</small></label></li>`}).join('')}</ul>
   <div class="inline"><input id="qName" placeholder="คนใหม่ หรือแขก" maxlength="24"><select id="qLevel">${levelOpts()}</select><button class="btn ghost" data-act="quickAdd">เพิ่ม</button></div>
   <div class="dlg-act"><button class="btn primary" data-act="close">เสร็จ</button></div>`);
+}
+/* popup เลือกผู้เล่นเกมเดี่ยว */
+function openSinglesPick(i){
+  const list=freePlayers().sort((x,y)=>rOf(y,'singles')-rOf(x,'singles'));
+  if(list.length<2)return toast('ต้องมีคนว่างอย่างน้อย 2 คน ตอนนี้มี '+list.length+' คน');
+  openDlg(`<h2>จัดเดี่ยว สนาม ${i+1}</h2>
+  <p class="sub" style="margin:-6px 0 10px">เลือก 2 คน เรียงตามคะแนนเดี่ยว คนที่อยู่ติดกันฝีมือใกล้กัน</p>
+  <ul class="cilist" id="spList">${list.map(id=>{const r=rOf(id,'singles');const tag=isResting(id)?', พักอยู่':'';
+    return`<li><label><input type="checkbox" class="sp" value="${id}">${nameHtml(id,'singles')} ${tierBadge(r)}
+    <small>${r}, ${gamesToday(id)} เกม${tag}</small></label></li>`}).join('')}</ul>
+  <p class="sub" id="spInfo">ยังไม่ได้เลือก</p>
+  <div class="dlg-act"><button class="btn ghost" data-act="close">ยกเลิก</button>
+  <button class="btn primary" data-act="startSingles" data-i="${i}" id="spGo" disabled>ลงสนาม</button></div>`);
+}
+function updateSinglesPick(changed){
+  const boxes=[...document.querySelectorAll('.sp')],on=boxes.filter(b=>b.checked);
+  if(on.length>2){changed.checked=false;toast('เลือกได้ 2 คน');return updateSinglesPick()}
+  const ids=on.map(b=>b.value),info=$('#spInfo'),go=$('#spGo');
+  go.disabled=ids.length!==2;
+  if(ids.length<2){info.textContent=ids.length?'เลือกอีก 1 คน':'ยังไม่ได้เลือก';return}
+  const pa=Math.round(expect(rOf(ids[0],'singles'),rOf(ids[1],'singles'))*100),f=faced(ids[0],ids[1]);
+  info.textContent=`${nm(ids[0])} ${pa}% ต่อ ${100-pa}% ${nm(ids[1])}`+(f?` (วันนี้เจอกันแล้ว ${f} ครั้ง)`:'');
 }
 /* popup เมื่อแตะชื่อในคิว / คนที่พัก / คนที่กลับแล้ว */
 function openPlayer(id){
@@ -687,9 +795,22 @@ function openPlayer(id){
     ${resting?`<button class="btn primary" data-act="ready" data-id="${id}">พร้อมเล่นแล้ว กลับเข้าคิว</button>`:
       CONFIG.restRounds.map(n=>`<button class="btn ghost" data-act="rest" data-id="${id}" data-i="${n}">ขอพัก ข้ามคิว ${n} รอบ</button>`).join('')+
       `<button class="btn ghost" data-act="rest" data-id="${id}" data-i="0">พักจนกว่าจะบอกพร้อม</button>`}
+    ${lockOf(id)?`<button class="btn ghost" data-act="unlock" data-id="${id}">ปลดล็อคคู่กับ ${esc(nm(lockOf(id)))}</button>`
+      :`<button class="btn ghost" data-act="lockPick" data-id="${id}">ล็อคคู่ Partner</button>`}
     <button class="btn danger" data-act="checkout" data-id="${id}">Check out กลับก่อน</button>
     <button class="btn ghost" data-act="close">ยกเลิก</button></div>
     ${resting?'':'<p class="note">คนที่พักจะไม่เสียลำดับ พอพักครบจะได้ลงก่อนตามจำนวนเกมที่เล่นน้อย</p>'}`);
+}
+/* popup เลือกคู่ที่จะล็อค */
+function openLockPick(id){
+  const s=S.session;
+  const list=s.present.filter(x=>x!==id&&M(x)&&!hasLeft(x)&&!lockOf(x)).sort((a,b)=>nm(a).localeCompare(nm(b),'th'));
+  if(!list.length)return toast('ไม่มีคนที่ว่างให้ล็อคคู่');
+  openDlg(`<h2>ล็อคคู่ให้ ${esc(nm(id))}</h2>
+  <p class="sub" style="margin:-6px 0 10px">จะได้ลงทีมเดียวกันทุกเกมประเภทคู่ของวันนี้ ถ้าคนใดคนหนึ่งยังเล่นหรือพักอยู่ อีกคนจะรอ</p>
+  <ul class="cilist">${list.map(x=>`<li><label><input type="radio" name="lk" value="${x}">${nameHtml(x,'doubles')} ${tierBadge(rOf(x,'doubles'))}<small>${rOf(x,'doubles')}</small></label></li>`).join('')}</ul>
+  <p class="err" id="err"></p>
+  <div class="dlg-act"><button class="btn ghost" data-act="close">ยกเลิก</button><button class="btn primary" data-act="doLock" data-id="${id}">ล็อคคู่</button></div>`);
 }
 function openCheckout(id){
   const s=S.session,fz=Object.assign({},s.frozen);
@@ -712,18 +833,19 @@ function openFinish(i){
     <span class="dash">–</span>
     <label>${c.b.map(x=>esc(nm(x))).join(' / ')}<input id="sb" type="number" inputmode="numeric" min="0" max="99"></label>
   </div>
-  <p class="sub" style="margin-top:12px">เกมนี้ใช้ลูก ${c.shuttles} ลูก คนละ ${baht(c.shuttles*S.session.shuttlePrice/4)}</p>
+  <p class="sub" style="margin-top:12px">เกมนี้ใช้ลูก ${c.shuttles} ลูก คนละ ${baht(c.shuttles*S.session.shuttlePrice/(c.a.length+c.b.length))}</p>
   <p class="err" id="err"></p>
   <div class="dlg-act"><button class="btn ghost" data-act="close">ยกเลิก</button><button class="btn primary" data-act="saveScore" data-i="${i}">บันทึกผล</button></div>`);
 }
 function openMember(id){
   const m=M(id);if(!m)return;
-  const pct=m.games?Math.round(m.wins/m.games*100):0;
+  ensureMember(m);
+  const box=(t)=>{const f=F(t),g=m[f.g],pct=g?Math.round(m[f.w]/g*100):0;
+    return`<div class="stat"><b>${m[f.r]}</b><span>คะแนน${CONFIG.separateSinglesRating?typeName(t):''} ระดับ ${esc(tier(m[f.r]))}<br>${g} เกม ชนะ ${pct}%</span></div>`};
   openDlg(`<h2>${esc(m.name)}</h2>
-  <div class="stats" style="grid-template-columns:repeat(3,1fr)">
-    <div class="stat"><b>${m.rating}</b><span>คะแนน ระดับ ${esc(tier(m.rating))}</span></div>
-    <div class="stat"><b>${m.games}</b><span>เกมทั้งหมด</span></div>
-    <div class="stat"><b>${pct}%</b><span>อัตราชนะ</span></div>
+  ${['doubles','singles'].filter((t,k)=>(k===0||CONFIG.separateSinglesRating)&&isChamp(id,t)).map(t=>`<p class="champ" style="margin:-6px 0 12px">${CROWN}<span>มือ 1 ประเภท${typeName(t)}</span></p>`).join('')}
+  <div class="stats" style="grid-template-columns:repeat(${CONFIG.separateSinglesRating?2:1},1fr)">
+    ${box('doubles')}${CONFIG.separateSinglesRating?box('singles'):''}
   </div>
   <label class="field"><span>ชื่อเล่น</span><input id="eName" maxlength="24" value="${esc(m.name)}"></label>
   <p class="err" id="err"></p>
@@ -758,8 +880,9 @@ function err(t){const e=$('#err');if(e)e.textContent=t}
 function loadDemo(){
   const names=[['ปอ',1240],['บี',1185],['ต้น',1150],['นุ่น',1120],['แบงค์',1090],['มิว',1060],['เจ',1030],['ฝน',1005],['โอ๊ต',980],['แพร',955],['กอล์ฟ',930],['เฟิร์น',905],['ภูมิ',1010],['ใบเตย',880]];
   S=defaultState();
-  names.forEach(([n,r],k)=>{const g=12+(k*7)%19,w=Math.round(g*clamp(.5+(r-1050)/500,.15,.85));S.members.push({id:uid(),name:n,rating:r,games:g,wins:w,losses:g-w})});
-  S.session={id:uid(),date:new Date().toISOString(),shuttlePrice:S.settings.shuttlePrice,courtFee:S.settings.courtFee,courts:Array(S.settings.courts).fill(null),present:S.members.slice(0,12).map(m=>m.id),paid:{},matches:[],lastDone:{},rest:{},left:{},frozen:{},starts:0};
+  names.forEach(([n,r],k)=>{const g=12+(k*7)%19,w=Math.round(g*clamp(.5+(r-1050)/500,.15,.85));const sr=r+((k*37)%61)-30,sg=(k*5)%9,sw=Math.round(sg*clamp(.5+(sr-1050)/500,.15,.85));
+    S.members.push({id:uid(),name:n,rating:r,games:g,wins:w,losses:g-w,sRating:sr,sGames:sg,sWins:sw,sLosses:sg-sw})});
+  S.session={id:uid(),date:new Date().toISOString(),shuttlePrice:S.settings.shuttlePrice,courtFee:S.settings.courtFee,courts:Array(S.settings.courts).fill(null),present:S.members.slice(0,12).map(m=>m.id),paid:{},matches:[],lastDone:{},locks:[],rest:{},left:{},frozen:{},starts:0};
   tab='court';save();render();closeDlg();toast('ใส่ข้อมูลตัวอย่างแล้ว 12 คนเช็คอินพร้อมเล่น');
 }
 function billText(){
@@ -796,11 +919,18 @@ const ACT={
   start:()=>{
     const sp=Math.max(0,+$('#fShuttle').value||0),cf=Math.max(0,+$('#fCourt').value||0),n=clamp(Math.round(+$('#fCourts').value||1),1,CONFIG.maxCourts);
     Object.assign(S.settings,{shuttlePrice:sp,courtFee:cf,courts:n});
-    S.session={id:uid(),date:new Date().toISOString(),shuttlePrice:sp,courtFee:cf,courts:Array(n).fill(null),present:[],paid:{},matches:[],lastDone:{},rest:{},left:{},frozen:{},starts:0};
+    S.session={id:uid(),date:new Date().toISOString(),shuttlePrice:sp,courtFee:cf,courts:Array(n).fill(null),present:[],paid:{},matches:[],lastDone:{},locks:[],rest:{},left:{},frozen:{},starts:0};
     save();render();openCheckin();
   },
   checkin:openCheckin,
   qPlayer:(t,i,id)=>openPlayer(id),
+  lockPick:(t,i,id)=>openLockPick(id),
+  doLock:(t,i,id)=>{
+    const r=dlg.querySelector('input[name=lk]:checked');if(!r)return err('เลือกคู่ก่อน');
+    unlock(id);unlock(r.value);S.session.locks.push([id,r.value]);
+    save();closeDlg();render();toast('ล็อค '+nm(id)+' กับ '+nm(r.value)+' แล้ว');
+  },
+  unlock:(t,i,id)=>{const p=lockOf(id);unlock(id);save();closeDlg();render();toast('ปลดล็อค '+nm(id)+' กับ '+nm(p)+' แล้ว')},
   rest:(t,i,id)=>{
     const s=S.session;s.rest[id]=i?s.starts+i:'manual';save();closeDlg();render();
     toast(nm(id)+(i?' พักข้าม '+i+' รอบ':' พักจนกว่าจะบอกพร้อม'));
@@ -808,7 +938,7 @@ const ACT={
   ready:(t,i,id)=>{delete S.session.rest[id];save();closeDlg();render();toast(nm(id)+' กลับเข้าคิวแล้ว')},
   checkout:(t,i,id)=>{if(onCourt().includes(id))return toast('ยังอยู่ในสนาม จบเกมก่อน');openCheckout(id)},
   doCheckout:(t,i,id)=>{
-    const s=S.session;freezeCourtShare(id);s.left[id]=Date.now();delete s.rest[id];
+    const s=S.session;freezeCourtShare(id);s.left[id]=Date.now();delete s.rest[id];unlock(id);
     if(i)s.paid[id]=true;save();closeDlg();render();
     toast(nm(id)+' Check out แล้ว'+(i?' รับเงินเรียบร้อย':' (ค้างจ่าย)'));
   },
@@ -819,6 +949,14 @@ const ACT={
     const m=newMember(n,+$('#qLevel').value);S.session.present.push(m.id);save();render();openCheckin();
   },
   fill:(t,i)=>fillCourt(i),
+  fillS:(t,i)=>openSinglesPick(i),
+  startSingles:(t,i)=>{
+    const ids=[...document.querySelectorAll('.sp:checked')].map(b=>b.value);
+    if(ids.length!==2)return;
+    if(S.session.courts[i])return toast('สนามนี้มีคนเล่นอยู่แล้ว');
+    closeDlg();startSingles(i,ids[0],ids[1]);
+  },
+  rankType:(t,i,id)=>{rankType=id;render()},
   swap:(t,i)=>swapTeams(i),
   cancelCourt:(t,i)=>{S.session.courts[i]=null;save();render()},
   shPlus:(t,i)=>{const c=S.session.courts[i];c.shuttles=Math.min(99,c.shuttles+1);save();render()},
@@ -904,9 +1042,10 @@ document.addEventListener('click',e=>{
   f(t,t.dataset.i!=null?+t.dataset.i:null,t.dataset.id);
 });
 document.addEventListener('change',e=>{
+  if(e.target.classList.contains('sp'))return updateSinglesPick(e.target);
   if(!e.target.classList.contains('ci')||!S.session)return;
   const id=e.target.value,p=S.session.present;
-  if(e.target.checked){if(!p.includes(id))p.push(id)}else{S.session.present=p.filter(x=>x!==id);delete S.session.rest[id]}
+  if(e.target.checked){if(!p.includes(id))p.push(id)}else{S.session.present=p.filter(x=>x!==id);delete S.session.rest[id];unlock(id)}
   save();render();
 });
 document.addEventListener('keydown',e=>{
