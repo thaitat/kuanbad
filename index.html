@@ -775,14 +775,17 @@ function render(){
    [ส่วน H] หน้าต่าง popup (เพิ่มสมาชิก, เช็คอิน, กรอกสกอร์, ตั้งค่า ฯลฯ)
    ===================================================================== */
 const dlg=$('#dlg');
-function openDlg(html){$('#dlgBody').innerHTML=html;if(!dlg.open)dlg.showModal();const f=dlg.querySelector('[data-focus]');if(f)f.focus()}
+function openDlg(html){$('#dlgBody').innerHTML=html;if(!dlg.open)dlg.showModal();
+  /* โฟกัสอัตโนมัติเฉพาะช่องตัวเลข (กรอกคะแนน) ช่องข้อความให้ผู้ใช้แตะเอง เพื่อให้คีย์บอร์ด Android สลับภาษาได้ตามปกติ */
+  const f=dlg.querySelector('[data-focus]');
+  if(f&&f.type==='number')f.focus();else{dlg.tabIndex=-1;dlg.focus({preventScroll:true})}}
 function closeDlg(){if(dlg.open)dlg.close()}
 dlg.addEventListener('click',e=>{if(e.target===dlg)closeDlg()});
 const levelOpts=(sel=CONFIG.defaultLevel)=>LEVELS.map((l,k)=>`<option value="${l.r}" ${k===sel?'selected':''}>${l.label} (${l.r})</option>`).join('');
 
 function openAddMember(){
   openDlg(`<h2>เพิ่มสมาชิก</h2>
-  <label class="field"><span>ชื่อเล่น</span><input id="mName" maxlength="24" data-focus></label>
+  <label class="field"><span>ชื่อเล่น</span><input id="mName" type="text" maxlength="24" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="done"></label>
   <label class="field"><span>ระดับฝีมือเริ่มต้น</span><select id="mLevel">${levelOpts()}</select></label>
   ${S.session?'<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="mIn" checked> เช็คอินวันนี้ด้วย</label>':''}
   <p class="err" id="err"></p>
@@ -798,7 +801,7 @@ function openCheckin(){
     const locked=busy.has(m.id)||gamesToday(m.id)>0||gone;
     return`<li><label><input type="checkbox" class="ci" value="${m.id}" ${s.present.includes(m.id)?'checked':''} ${locked?'disabled':''}>
     ${esc(m.name)} ${tierBadge(m.rating)}<small>${gone?'กลับแล้ว':locked?(busy.has(m.id)?'อยู่ในสนาม':'เล่นไปแล้ว'):''}</small></label></li>`}).join('')}</ul>
-  <div class="inline"><input id="qName" placeholder="คนใหม่ หรือแขก" maxlength="24"><select id="qLevel">${levelOpts()}</select><button class="btn ghost" data-act="quickAdd">เพิ่ม</button></div>
+  <div class="inline"><input id="qName" type="text" placeholder="คนใหม่ หรือแขก" maxlength="24" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="done"><select id="qLevel">${levelOpts()}</select><button class="btn ghost" data-act="quickAdd">เพิ่ม</button></div>
   <div class="dlg-act"><button class="btn primary" data-act="close">เสร็จ</button></div>`);
 }
 /* popup เลือกผู้เล่นเกมเดี่ยว */
@@ -1108,6 +1111,7 @@ document.addEventListener('change',e=>{
   save();render();
 });
 document.addEventListener('keydown',e=>{
+  if(e.isComposing||e.keyCode===229)return; /* ปุ่มจากคีย์บอร์ดภาษา (IME) ไม่ใช่ Enter จริง */
   if(e.key==='Enter'&&dlg.open&&e.target.tagName==='INPUT'){
     const b=dlg.querySelector('.btn.primary[data-act]:not([data-act="close"])');if(b){e.preventDefault();b.click()}
   }
